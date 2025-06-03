@@ -1,0 +1,3 @@
+requests>=2.0
+# Optionally add PyGithub if you want a higher-level API wrapper
+# PyGithub>=1.59
