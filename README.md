@@ -1,18 +1,54 @@
-# Boilerplate GitHub License Checker
+# AI Terms Analyzer ⚡
 
-This repository contains a skeleton Python application that fetches license information from a given GitHub repository URL. The code is intentionally minimal so you can extend it or ask another language model to build the final implementation.
+A web application that interrogates the Terms & Conditions of generative AI platforms and produces a structured verdict report.
 
-## Purpose
+## What it does
 
-The goal is to provide a starting point for an application that:
-1. Accepts a GitHub repository URL or `owner/repo` string as input.
-2. Retrieves the repository's license details using the GitHub API.
-3. Displays the license name and a brief description of what the license permits.
+Paste a URL to any GenAI platform's Terms of Service (or paste the text directly) and the analyzer will:
 
-## How to Build the Final Application
+- **Fetch & extract** the T&C text from the page
+- **Cross-check** against key categories:
+  - Training on user content
+  - Ownership of outputs
+  - Enterprise exclusions
+  - Data retention policy
+  - Third-party sharing
+  - Content restrictions
+  - Liability limitation
+  - IP indemnification
+- **Classify** the platform as Restrictive / Moderate / Permissive / Unclear
+- **Output** a risk score, detailed verdict, quick checklist, key quotes, and recommendations
 
-1. Install the required Python dependencies from `requirements.txt`.
-2. Implement the functions marked with `TODO` comments in `src/main.py`.
-3. Run the application using `python -m src.main <github_url>`.
+## Setup
 
-See inline comments in the code for more details about each step.
+```bash
+pip install -r requirements.txt
+```
+
+Create a `.env` file (see `.env.example`):
+
+```
+NEBIUS_API_KEY=your-nebius-token-factory-key
+NEBIUS_BASE_URL=https://api.studio.nebius.com/v1
+NEBIUS_MODEL=meta-llama/Meta-Llama-3.1-70B-Instruct
+```
+
+## Run
+
+```bash
+python app.py
+```
+
+Then open http://localhost:5000 in your browser.
+
+## Tests
+
+```bash
+python -m pytest tests/ -v
+```
+
+## Tech Stack
+
+- **Backend**: Flask + OpenAI-compatible client (Nebius AI)
+- **Frontend**: Single-page HTML/CSS/JS with dark theme
+- **Extraction**: Trafilatura + BeautifulSoup fallback
