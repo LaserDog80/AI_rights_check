@@ -104,6 +104,8 @@ textarea:focus{outline:none;border-color:var(--accent)}
 /* ── Results ─────────────────────────────────────────────── */
 #results{display:none}
 #results.active{display:block}
+#deep-results{display:none}
+#deep-results.active{display:block}
 
 /* Verdict banner */
 .verdict-banner{
@@ -180,6 +182,114 @@ textarea:focus{outline:none;border-color:var(--accent)}
   content:'→';position:absolute;left:0;color:var(--accent2);
 }
 
+/* ── Analysis mode toggle ─────────────────────────────── */
+.mode-toggle{display:flex;gap:.5rem;margin-top:.75rem}
+.mode-btn{
+  flex:1;padding:.6rem;border:1px solid var(--border);border-radius:8px;
+  background:var(--surface2);color:var(--text2);font-size:.85rem;
+  font-weight:600;cursor:pointer;text-align:center;transition:all .2s;
+}
+.mode-btn.active{
+  border-color:var(--accent);color:var(--accent2);
+  background:rgba(108,92,231,.1);
+}
+.mode-btn:hover{border-color:var(--accent)}
+.tier-select{
+  margin-top:.75rem;display:flex;align-items:center;
+}
+.tier-select select{
+  flex:1;padding:.55rem .75rem;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;color:var(--text);font-size:.88rem;
+  cursor:pointer;transition:border-color .2s;
+}
+.tier-select select:focus{outline:none;border-color:var(--accent)}
+
+/* ── Deep analysis results ───────────────────────────── */
+.clause-card{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:1.1rem;margin-bottom:.75rem;
+  transition:border-color .2s;
+}
+.clause-card:hover{border-color:var(--accent)}
+.clause-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;margin-bottom:.5rem}
+.clause-header h4{font-size:.95rem;font-weight:700;color:var(--text)}
+.risk-badge{
+  display:inline-block;padding:.2rem .6rem;border-radius:12px;
+  font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+}
+.risk-critical{background:rgba(255,82,82,.2);color:var(--red);border:1px solid rgba(255,82,82,.4)}
+.risk-high{background:rgba(255,82,82,.12);color:#ff8a80;border:1px solid rgba(255,82,82,.25)}
+.risk-medium{background:rgba(255,171,64,.15);color:var(--amber);border:1px solid rgba(255,171,64,.3)}
+.risk-low{background:rgba(0,230,118,.12);color:var(--green);border:1px solid rgba(0,230,118,.25)}
+.risk-informational{background:rgba(144,144,176,.12);color:var(--text2);border:1px solid rgba(144,144,176,.25)}
+.clause-quote{
+  border-left:3px solid var(--accent);padding:.4rem .8rem;
+  margin:.5rem 0;color:var(--text2);font-style:italic;font-size:.82rem;
+  background:rgba(108,92,231,.04);border-radius:0 6px 6px 0;
+}
+.clause-plain{font-size:.88rem;color:var(--text);margin:.4rem 0;line-height:1.5}
+.clause-flags{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.4rem}
+.flag-tag{
+  font-size:.72rem;padding:.15rem .5rem;border-radius:10px;
+  background:rgba(255,171,64,.1);color:var(--amber);border:1px solid rgba(255,171,64,.2);
+}
+.cat-tag{
+  font-size:.72rem;padding:.15rem .5rem;border-radius:10px;
+  background:rgba(108,92,231,.1);color:var(--accent2);border:1px solid rgba(108,92,231,.2);
+}
+
+/* Hidden concerns */
+.concern-card{
+  background:var(--surface2);border:1px solid rgba(255,82,82,.2);
+  border-radius:10px;padding:1rem;margin-bottom:.6rem;
+}
+.concern-card h4{font-size:.9rem;font-weight:700;margin-bottom:.3rem}
+.concern-card p{font-size:.85rem;color:var(--text2);line-height:1.45}
+
+/* Comparison columns */
+.comparison-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem;margin-top:.75rem}
+.comparison-col h4{font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem}
+.comparison-col.better h4{color:var(--green)}
+.comparison-col.worse h4{color:var(--red)}
+.comparison-col.standard h4{color:var(--text2)}
+.comparison-col ul{list-style:none}
+.comparison-col li{font-size:.85rem;padding:.25rem 0;color:var(--text);padding-left:1rem;position:relative}
+.comparison-col.better li::before{content:'✓';position:absolute;left:0;color:var(--green)}
+.comparison-col.worse li::before{content:'✗';position:absolute;left:0;color:var(--red)}
+.comparison-col.standard li::before{content:'—';position:absolute;left:0;color:var(--text2)}
+
+/* Rights summary */
+.rights-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem;margin-top:.75rem}
+.rights-col h4{font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem}
+.rights-col.keep h4{color:var(--green)}
+.rights-col.give-up h4{color:var(--red)}
+.rights-col.unclear-rights h4{color:var(--amber)}
+.rights-col ul{list-style:none}
+.rights-col li{font-size:.85rem;padding:.25rem 0;color:var(--text)}
+
+/* Priority recommendations */
+.priority-rec{
+  display:flex;align-items:flex-start;gap:.6rem;padding:.5rem 0;
+  border-bottom:1px solid var(--border);font-size:.9rem;
+}
+.priority-rec:last-child{border-bottom:none}
+.priority-badge{
+  font-size:.65rem;padding:.15rem .45rem;border-radius:8px;
+  font-weight:700;text-transform:uppercase;white-space:nowrap;flex-shrink:0;margin-top:.1rem;
+}
+.priority-critical{background:rgba(255,82,82,.2);color:var(--red)}
+.priority-high{background:rgba(255,82,82,.1);color:#ff8a80}
+.priority-medium{background:rgba(255,171,64,.15);color:var(--amber)}
+.priority-low{background:rgba(0,230,118,.12);color:var(--green)}
+
+/* Red flags */
+.red-flag{
+  padding:.5rem .75rem;margin:.3rem 0;border-radius:8px;
+  background:rgba(255,82,82,.06);border:1px solid rgba(255,82,82,.15);
+  font-size:.88rem;color:var(--text);
+}
+
 /* Footer */
 footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.8rem}
 </style>
@@ -202,12 +312,31 @@ footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.8rem}
     </div>
     <div class="or-divider">— or paste the text directly —</div>
     <textarea id="text-input" placeholder="Paste Terms & Conditions text here…"></textarea>
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="mode-quick" onclick="setMode('quick')">Quick Analysis</button>
+      <button class="mode-btn" id="mode-deep" onclick="setMode('deep')">Deep Analysis</button>
+    </div>
+    <div class="tier-select" id="tier-select" style="display:none">
+      <label for="tier-dropdown" style="font-size:.85rem;color:var(--text2);margin-right:.5rem">Pricing Tier:</label>
+      <select id="tier-dropdown">
+        <option value="">-- Any / Not specified --</option>
+        <option value="Free">Free</option>
+        <option value="Standard">Standard</option>
+        <option value="Plus">Plus</option>
+        <option value="Pro">Pro</option>
+        <option value="Team">Team</option>
+        <option value="Enterprise">Enterprise</option>
+        <option value="Business">Business</option>
+        <option value="Developer">Developer</option>
+        <option value="API">API / Pay-as-you-go</option>
+      </select>
+    </div>
   </div>
 
   <!-- Loader -->
   <div class="loader" id="loader">
     <div class="spinner"></div>
-    <p>Fetching &amp; analysing terms… this takes 15-30 seconds.</p>
+    <p id="loader-text">Fetching &amp; analysing terms… this takes 15-30 seconds.</p>
   </div>
 
   <!-- Error -->
@@ -257,10 +386,84 @@ footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.8rem}
     </div>
   </div>
 
-  <footer>AI Terms Analyzer &middot; Powered by Nebius AI</footer>
+  <!-- Deep Analysis Results -->
+  <div id="deep-results">
+    <!-- Verdict Banner (reused style) -->
+    <div class="verdict-banner card">
+      <h2>Platform</h2>
+      <div class="platform" id="dr-platform"></div>
+      <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:.75rem">
+        <span id="dr-badge" class="badge"></span>
+        <span style="color:var(--text2);font-size:.8rem" id="dr-doctype"></span>
+        <span style="color:var(--text2);font-size:.8rem" id="dr-source"></span>
+      </div>
+      <div class="verdict-text" id="dr-summary"></div>
+      <div class="risk-meter">
+        <label>User Risk Score</label>
+        <div class="risk-bar-track"><div class="risk-bar-fill" id="dr-risk-bar"></div></div>
+        <div class="risk-value" id="dr-risk-value"></div>
+      </div>
+    </div>
+
+    <!-- Tier Analysis (shown when a tier is selected) -->
+    <div class="card" id="dr-tier-card" style="display:none">
+      <h3 style="margin-bottom:.5rem">Tier-Specific Analysis</h3>
+      <p style="color:var(--text2);font-size:.85rem;margin-bottom:.5rem">How your selected tier affects your rights.</p>
+      <div id="dr-tier-name" style="font-weight:700;color:var(--accent2);margin-bottom:.5rem"></div>
+      <div class="rights-grid" id="dr-tier-details"></div>
+    </div>
+
+    <!-- Clause-by-Clause -->
+    <div class="card">
+      <h3 style="margin-bottom:.25rem">Clause-by-Clause Analysis</h3>
+      <p style="color:var(--text2);font-size:.85rem;margin-bottom:.75rem">Every significant provision, decoded.</p>
+      <div id="dr-clauses"></div>
+    </div>
+
+    <!-- Hidden Concerns -->
+    <div class="card">
+      <h3 style="margin-bottom:.75rem">Hidden Concerns</h3>
+      <div id="dr-concerns"></div>
+    </div>
+
+    <!-- User Rights Summary -->
+    <div class="card">
+      <h3 style="margin-bottom:.5rem">Your Rights Summary</h3>
+      <div class="rights-grid" id="dr-rights"></div>
+    </div>
+
+    <!-- Industry Comparison -->
+    <div class="card">
+      <h3 style="margin-bottom:.5rem">Compared to Industry Norms</h3>
+      <div class="comparison-grid" id="dr-comparison"></div>
+    </div>
+
+    <!-- Legal Red Flags -->
+    <div class="card">
+      <h3 style="margin-bottom:.75rem">Legal Red Flags</h3>
+      <div id="dr-redflags"></div>
+    </div>
+
+    <!-- Prioritised Recommendations -->
+    <div class="card">
+      <h3 style="margin-bottom:.75rem">Prioritised Recommendations</h3>
+      <div id="dr-recs"></div>
+    </div>
+  </div>
+
+  <footer>AI Terms Analyzer &middot; Powered by Nebius AI &amp; Claude</footer>
 </div>
 
 <script>
+let analysisMode = "quick"; // "quick" or "deep"
+
+function setMode(mode) {
+  analysisMode = mode;
+  document.getElementById("mode-quick").classList.toggle("active", mode === "quick");
+  document.getElementById("mode-deep").classList.toggle("active", mode === "deep");
+  document.getElementById("tier-select").style.display = mode === "deep" ? "flex" : "none";
+}
+
 const CATEGORY_LABELS = {
   training_on_user_content: "Training on Your Content",
   ownership_of_outputs: "Ownership of Outputs",
@@ -380,6 +583,135 @@ function renderResults(data) {
   document.getElementById("results").classList.add("active");
 }
 
+function renderDeepResults(data) {
+  document.getElementById("dr-platform").textContent = data.platform_name || "Unknown";
+  document.getElementById("dr-summary").textContent = data.executive_summary || "";
+
+  const badge = document.getElementById("dr-badge");
+  badge.textContent = data.classification || "Unclear";
+  badge.className = "badge " + classificationBadge(data.classification);
+
+  document.getElementById("dr-doctype").textContent = data.document_type ? `Type: ${data.document_type}` : "";
+  document.getElementById("dr-source").textContent = data.source_url ? `Source: ${data.source_url}` : "";
+
+  // Risk
+  const risk = data.risk_score || 0;
+  document.getElementById("dr-risk-bar").style.width = `${risk * 10}%`;
+  document.getElementById("dr-risk-value").textContent = `${risk} / 10`;
+
+  // Clauses
+  const clausesEl = document.getElementById("dr-clauses");
+  clausesEl.innerHTML = "";
+  (data.clauses || []).forEach(c => {
+    const riskCls = `risk-${(c.risk_level || "informational").toLowerCase()}`;
+    const flags = (c.flags || []).map(f => `<span class="flag-tag">${f}</span>`).join("");
+    clausesEl.innerHTML += `
+      <div class="clause-card">
+        <div class="clause-header">
+          <h4>${c.clause_title || ""}</h4>
+          <div><span class="risk-badge ${riskCls}">${c.risk_level || ""}</span> <span class="cat-tag">${c.category || ""}</span></div>
+        </div>
+        <div class="clause-quote">"${c.original_text || ""}"</div>
+        <div class="clause-plain">${c.plain_english || ""}</div>
+        ${flags ? `<div class="clause-flags">${flags}</div>` : ""}
+      </div>`;
+  });
+
+  // Hidden concerns
+  const concernsEl = document.getElementById("dr-concerns");
+  concernsEl.innerHTML = "";
+  (data.hidden_concerns || []).forEach(h => {
+    const sevCls = `risk-${(h.severity || "medium").toLowerCase()}`;
+    concernsEl.innerHTML += `
+      <div class="concern-card">
+        <h4>${h.title} <span class="risk-badge ${sevCls}">${h.severity}</span></h4>
+        <p>${h.description}</p>
+      </div>`;
+  });
+
+  // Rights summary
+  const rightsEl = document.getElementById("dr-rights");
+  rightsEl.innerHTML = "";
+  const rights = data.user_rights_summary || {};
+  const rightsCols = [
+    { key: "what_you_keep", label: "What You Keep", cls: "keep" },
+    { key: "what_you_give_up", label: "What You Give Up", cls: "give-up" },
+    { key: "what_is_unclear", label: "What Is Unclear", cls: "unclear-rights" },
+  ];
+  rightsCols.forEach(col => {
+    const items = (rights[col.key] || []).map(i => `<li>${i}</li>`).join("");
+    rightsEl.innerHTML += `
+      <div class="rights-col ${col.cls}">
+        <h4>${col.label}</h4>
+        <ul>${items || "<li>None identified</li>"}</ul>
+      </div>`;
+  });
+
+  // Industry comparison
+  const compEl = document.getElementById("dr-comparison");
+  compEl.innerHTML = "";
+  const comp = data.comparison_to_industry || {};
+  const compCols = [
+    { key: "better_than_average", label: "Better Than Average", cls: "better" },
+    { key: "worse_than_average", label: "Worse Than Average", cls: "worse" },
+    { key: "standard", label: "Industry Standard", cls: "standard" },
+  ];
+  compCols.forEach(col => {
+    const items = (comp[col.key] || []).map(i => `<li>${i}</li>`).join("");
+    compEl.innerHTML += `
+      <div class="comparison-col ${col.cls}">
+        <h4>${col.label}</h4>
+        <ul>${items || "<li>—</li>"}</ul>
+      </div>`;
+  });
+
+  // Red flags
+  const rfEl = document.getElementById("dr-redflags");
+  rfEl.innerHTML = "";
+  (data.legal_red_flags || []).forEach(f => {
+    rfEl.innerHTML += `<div class="red-flag">${f}</div>`;
+  });
+
+  // Recommendations
+  const recsEl = document.getElementById("dr-recs");
+  recsEl.innerHTML = "";
+  (data.actionable_recommendations || []).forEach(r => {
+    const pCls = `priority-${(r.priority || "medium").toLowerCase()}`;
+    recsEl.innerHTML += `
+      <div class="priority-rec">
+        <span class="priority-badge ${pCls}">${r.priority}</span>
+        <span>${r.action}</span>
+      </div>`;
+  });
+
+  // Tier analysis
+  const tierCard = document.getElementById("dr-tier-card");
+  const ta = data.tier_analysis;
+  if (ta && ta.selected_tier) {
+    tierCard.style.display = "block";
+    document.getElementById("dr-tier-name").textContent = `Selected Tier: ${ta.selected_tier}`;
+    const tierDetails = document.getElementById("dr-tier-details");
+    tierDetails.innerHTML = "";
+    const tierCols = [
+      { key: "tier_specific_benefits", label: "Tier Benefits", cls: "keep" },
+      { key: "tier_specific_restrictions", label: "Tier Restrictions", cls: "give-up" },
+      { key: "upgrade_considerations", label: "Upgrade Considerations", cls: "unclear-rights" },
+    ];
+    tierCols.forEach(col => {
+      const items = (ta[col.key] || []).map(i => `<li>${i}</li>`).join("");
+      tierDetails.innerHTML += `
+        <div class="rights-col ${col.cls}">
+          <h4>${col.label}</h4>
+          <ul>${items || "<li>None identified</li>"}</ul>
+        </div>`;
+    });
+  } else {
+    tierCard.style.display = "none";
+  }
+
+  document.getElementById("deep-results").classList.add("active");
+}
+
 async function runAnalysis() {
   const url = document.getElementById("url-input").value.trim();
   const rawText = document.getElementById("text-input").value.trim();
@@ -387,6 +719,7 @@ async function runAnalysis() {
   const loader = document.getElementById("loader");
   const errorEl = document.getElementById("error-msg");
   const results = document.getElementById("results");
+  const deepResults = document.getElementById("deep-results");
 
   if (!url && !rawText) {
     errorEl.textContent = "Please enter a URL or paste T&C text.";
@@ -396,20 +729,34 @@ async function runAnalysis() {
 
   errorEl.classList.remove("active");
   results.classList.remove("active");
+  deepResults.classList.remove("active");
   loader.classList.add("active");
+  document.getElementById("loader-text").innerHTML = analysisMode === "deep"
+    ? "Running deep clause-by-clause analysis with Claude… this may take 30-60 seconds."
+    : "Fetching &amp; analysing terms… this takes 15-30 seconds.";
   btn.disabled = true;
 
+  const endpoint = analysisMode === "deep" ? "/api/deep-analyse" : "/api/analyse";
+  const tier = document.getElementById("tier-dropdown").value;
+
   try {
-    const resp = await fetch("/api/analyse", {
+    const payload = {url, raw_text: rawText};
+    if (analysisMode === "deep" && tier) payload.tier = tier;
+
+    const resp = await fetch(endpoint, {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({url, raw_text: rawText}),
+      body: JSON.stringify(payload),
     });
     const data = await resp.json();
     if (!resp.ok) {
       throw new Error(data.error || "Analysis failed");
     }
-    renderResults(data);
+    if (analysisMode === "deep") {
+      renderDeepResults(data);
+    } else {
+      renderResults(data);
+    }
   } catch (e) {
     errorEl.textContent = e.message;
     errorEl.classList.add("active");
