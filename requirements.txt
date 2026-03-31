@@ -1,3 +1,7 @@
 requests>=2.0
-# Optionally add PyGithub if you want a higher-level API wrapper
-# PyGithub>=1.59
+flask>=3.0
+openai>=1.0
+python-dotenv>=1.0
+beautifulsoup4>=4.12
+trafilatura>=1.6
+markupsafe>=2.1
