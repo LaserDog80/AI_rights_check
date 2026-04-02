@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI Terms Analyzer</title>
 <style>
-/* ── Reset & Variables ─────────────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a28;--surface3:#222236;
@@ -21,8 +20,6 @@ body{
   min-height:100vh;line-height:1.6;
 }
 a{color:var(--accent2);text-decoration:none}
-
-/* ── Background grid effect ──────────────────────────────── */
 body::before{
   content:'';position:fixed;inset:0;z-index:-1;
   background-image:
@@ -30,8 +27,6 @@ body::before{
     linear-gradient(90deg,rgba(108,92,231,.03) 1px,transparent 1px);
   background-size:60px 60px;
 }
-
-/* ── Layout ──────────────────────────────────────────────── */
 .container{max-width:960px;margin:0 auto;padding:2rem 1.5rem}
 header{text-align:center;padding:3rem 0 2rem}
 header h1{
@@ -41,15 +36,11 @@ header h1{
   letter-spacing:-.02em;
 }
 header p{color:var(--text2);margin-top:.5rem;font-size:1.05rem}
-
-/* ── Card ────────────────────────────────────────────────── */
 .card{
   background:var(--surface);border:1px solid var(--border);
   border-radius:var(--radius);padding:1.75rem;margin-bottom:1.5rem;
   box-shadow:var(--glow);
 }
-
-/* ── Input area ──────────────────────────────────────────── */
 .input-group{display:flex;gap:.75rem;flex-wrap:wrap}
 .input-group input[type=text]{
   flex:1;min-width:200px;padding:.75rem 1rem;
@@ -69,8 +60,6 @@ textarea:focus{outline:none;border-color:var(--accent)}
   text-align:center;color:var(--text2);font-size:.85rem;
   margin:.75rem 0;text-transform:uppercase;letter-spacing:.1em;
 }
-
-/* ── Buttons ─────────────────────────────────────────────── */
 .btn{
   padding:.75rem 1.5rem;border:none;border-radius:8px;
   font-size:.95rem;font-weight:600;cursor:pointer;
@@ -81,8 +70,6 @@ textarea:focus{outline:none;border-color:var(--accent)}
 }
 .btn-primary:hover{filter:brightness(1.15);transform:translateY(-1px)}
 .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;filter:none}
-
-/* ── Loader ──────────────────────────────────────────────── */
 .loader{display:none;text-align:center;padding:2rem}
 .loader.active{display:block}
 .spinner{
@@ -92,22 +79,18 @@ textarea:focus{outline:none;border-color:var(--accent)}
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 .loader p{color:var(--text2);font-size:.9rem}
-
-/* ── Error ───────────────────────────────────────────────── */
 .error-msg{
   background:rgba(255,82,82,.1);border:1px solid rgba(255,82,82,.3);
   color:var(--red);padding:1rem;border-radius:8px;margin-top:1rem;
   display:none;
 }
 .error-msg.active{display:block}
-
-/* ── Results ─────────────────────────────────────────────── */
 #results{display:none}
 #results.active{display:block}
 #deep-results{display:none}
 #deep-results.active{display:block}
-
-/* Verdict banner */
+#tier-results{display:none}
+#tier-results.active{display:block}
 .verdict-banner{
   padding:1.5rem;border-radius:var(--radius);margin-bottom:1.5rem;
   border:1px solid var(--border);position:relative;overflow:hidden;
@@ -119,8 +102,6 @@ textarea:focus{outline:none;border-color:var(--accent)}
 .verdict-banner h2{font-size:1.1rem;color:var(--text2);font-weight:500;margin-bottom:.25rem}
 .verdict-banner .platform{font-size:1.6rem;font-weight:700;margin-bottom:.5rem}
 .verdict-banner .verdict-text{font-size:1.05rem;line-height:1.5}
-
-/* Classification badge */
 .badge{
   display:inline-block;padding:.3rem .9rem;border-radius:20px;
   font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
@@ -129,20 +110,11 @@ textarea:focus{outline:none;border-color:var(--accent)}
 .badge-moderate{background:rgba(255,171,64,.15);color:var(--amber);border:1px solid rgba(255,171,64,.3)}
 .badge-permissive{background:rgba(0,230,118,.15);color:var(--green);border:1px solid rgba(0,230,118,.3)}
 .badge-unclear{background:rgba(144,144,176,.15);color:var(--text2);border:1px solid rgba(144,144,176,.3)}
-
-/* Risk meter */
 .risk-meter{margin:1rem 0}
 .risk-meter label{font-size:.85rem;color:var(--text2);display:block;margin-bottom:.4rem}
-.risk-bar-track{
-  height:8px;background:var(--surface3);border-radius:4px;overflow:hidden;
-}
-.risk-bar-fill{
-  height:100%;border-radius:4px;transition:width .6s ease;
-  background:linear-gradient(90deg,var(--green),var(--amber),var(--red));
-}
+.risk-bar-track{height:8px;background:var(--surface3);border-radius:4px;overflow:hidden}
+.risk-bar-fill{height:100%;border-radius:4px;transition:width .6s ease;background:linear-gradient(90deg,var(--green),var(--amber),var(--red))}
 .risk-value{font-size:.85rem;color:var(--text2);margin-top:.25rem;text-align:right}
-
-/* Category grid */
 .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-top:1rem}
 .cat-card{
   background:var(--surface2);border:1px solid var(--border);
@@ -152,51 +124,24 @@ textarea:focus{outline:none;border-color:var(--accent)}
 .cat-card h4{font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:.4rem}
 .cat-card .status{font-weight:700;font-size:1rem;margin-bottom:.3rem}
 .cat-card .detail{font-size:.85rem;color:var(--text2);line-height:1.45}
-
-/* Status colours */
 .s-good{color:var(--green)}.s-bad{color:var(--red)}.s-warn{color:var(--amber)}.s-neutral{color:var(--text2)}
-
-/* Checklist */
 .checklist{list-style:none;margin-top:.75rem}
-.checklist li{
-  padding:.6rem .75rem;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;gap:.6rem;font-size:.92rem;
-}
+.checklist li{padding:.6rem .75rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.6rem;font-size:.92rem}
 .checklist li:last-child{border-bottom:none}
 .check-icon{font-size:1.1rem;flex-shrink:0}
-
-/* Quotes */
-.quote{
-  border-left:3px solid var(--accent);padding:.5rem 1rem;
-  margin:.5rem 0;color:var(--text2);font-style:italic;font-size:.9rem;
-  background:var(--surface2);border-radius:0 8px 8px 0;
-}
-
-/* Recommendations */
+.quote{border-left:3px solid var(--accent);padding:.5rem 1rem;margin:.5rem 0;color:var(--text2);font-style:italic;font-size:.9rem;background:var(--surface2);border-radius:0 8px 8px 0}
 .rec-list{list-style:none;margin-top:.5rem}
-.rec-list li{
-  padding:.4rem 0;padding-left:1.2rem;position:relative;
-  font-size:.92rem;color:var(--text);
-}
-.rec-list li::before{
-  content:'→';position:absolute;left:0;color:var(--accent2);
-}
-
-/* ── Analysis mode toggle ─────────────────────────────── */
+.rec-list li{padding:.4rem 0;padding-left:1.2rem;position:relative;font-size:.92rem;color:var(--text)}
+.rec-list li::before{content:'>';position:absolute;left:0;color:var(--accent2)}
 .mode-toggle{display:flex;gap:.5rem;margin-top:.75rem}
 .mode-btn{
   flex:1;padding:.6rem;border:1px solid var(--border);border-radius:8px;
   background:var(--surface2);color:var(--text2);font-size:.85rem;
   font-weight:600;cursor:pointer;text-align:center;transition:all .2s;
 }
-.mode-btn.active{
-  border-color:var(--accent);color:var(--accent2);
-  background:rgba(108,92,231,.1);
-}
+.mode-btn.active{border-color:var(--accent);color:var(--accent2);background:rgba(108,92,231,.1)}
 .mode-btn:hover{border-color:var(--accent)}
-.tier-select{
-  margin-top:.75rem;display:flex;align-items:center;
-}
+.tier-select{margin-top:.75rem;display:flex;align-items:center}
 .tier-select select{
   flex:1;padding:.55rem .75rem;
   background:var(--surface2);border:1px solid var(--border);
@@ -204,50 +149,24 @@ textarea:focus{outline:none;border-color:var(--accent)}
   cursor:pointer;transition:border-color .2s;
 }
 .tier-select select:focus{outline:none;border-color:var(--accent)}
-
-/* ── Deep analysis results ───────────────────────────── */
-.clause-card{
-  background:var(--surface2);border:1px solid var(--border);
-  border-radius:10px;padding:1.1rem;margin-bottom:.75rem;
-  transition:border-color .2s;
-}
+.clause-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1.1rem;margin-bottom:.75rem;transition:border-color .2s}
 .clause-card:hover{border-color:var(--accent)}
 .clause-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;margin-bottom:.5rem}
 .clause-header h4{font-size:.95rem;font-weight:700;color:var(--text)}
-.risk-badge{
-  display:inline-block;padding:.2rem .6rem;border-radius:12px;
-  font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
-}
+.risk-badge{display:inline-block;padding:.2rem .6rem;border-radius:12px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .risk-critical{background:rgba(255,82,82,.2);color:var(--red);border:1px solid rgba(255,82,82,.4)}
 .risk-high{background:rgba(255,82,82,.12);color:#ff8a80;border:1px solid rgba(255,82,82,.25)}
 .risk-medium{background:rgba(255,171,64,.15);color:var(--amber);border:1px solid rgba(255,171,64,.3)}
 .risk-low{background:rgba(0,230,118,.12);color:var(--green);border:1px solid rgba(0,230,118,.25)}
 .risk-informational{background:rgba(144,144,176,.12);color:var(--text2);border:1px solid rgba(144,144,176,.25)}
-.clause-quote{
-  border-left:3px solid var(--accent);padding:.4rem .8rem;
-  margin:.5rem 0;color:var(--text2);font-style:italic;font-size:.82rem;
-  background:rgba(108,92,231,.04);border-radius:0 6px 6px 0;
-}
+.clause-quote{border-left:3px solid var(--accent);padding:.4rem .8rem;margin:.5rem 0;color:var(--text2);font-style:italic;font-size:.82rem;background:rgba(108,92,231,.04);border-radius:0 6px 6px 0}
 .clause-plain{font-size:.88rem;color:var(--text);margin:.4rem 0;line-height:1.5}
 .clause-flags{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.4rem}
-.flag-tag{
-  font-size:.72rem;padding:.15rem .5rem;border-radius:10px;
-  background:rgba(255,171,64,.1);color:var(--amber);border:1px solid rgba(255,171,64,.2);
-}
-.cat-tag{
-  font-size:.72rem;padding:.15rem .5rem;border-radius:10px;
-  background:rgba(108,92,231,.1);color:var(--accent2);border:1px solid rgba(108,92,231,.2);
-}
-
-/* Hidden concerns */
-.concern-card{
-  background:var(--surface2);border:1px solid rgba(255,82,82,.2);
-  border-radius:10px;padding:1rem;margin-bottom:.6rem;
-}
+.flag-tag{font-size:.72rem;padding:.15rem .5rem;border-radius:10px;background:rgba(255,171,64,.1);color:var(--amber);border:1px solid rgba(255,171,64,.2)}
+.cat-tag{font-size:.72rem;padding:.15rem .5rem;border-radius:10px;background:rgba(108,92,231,.1);color:var(--accent2);border:1px solid rgba(108,92,231,.2)}
+.concern-card{background:var(--surface2);border:1px solid rgba(255,82,82,.2);border-radius:10px;padding:1rem;margin-bottom:.6rem}
 .concern-card h4{font-size:.9rem;font-weight:700;margin-bottom:.3rem}
 .concern-card p{font-size:.85rem;color:var(--text2);line-height:1.45}
-
-/* Comparison columns */
 .comparison-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem;margin-top:.75rem}
 .comparison-col h4{font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem}
 .comparison-col.better h4{color:var(--green)}
@@ -255,11 +174,9 @@ textarea:focus{outline:none;border-color:var(--accent)}
 .comparison-col.standard h4{color:var(--text2)}
 .comparison-col ul{list-style:none}
 .comparison-col li{font-size:.85rem;padding:.25rem 0;color:var(--text);padding-left:1rem;position:relative}
-.comparison-col.better li::before{content:'✓';position:absolute;left:0;color:var(--green)}
-.comparison-col.worse li::before{content:'✗';position:absolute;left:0;color:var(--red)}
-.comparison-col.standard li::before{content:'—';position:absolute;left:0;color:var(--text2)}
-
-/* Rights summary */
+.comparison-col.better li::before{content:'Y';position:absolute;left:0;color:var(--green)}
+.comparison-col.worse li::before{content:'X';position:absolute;left:0;color:var(--red)}
+.comparison-col.standard li::before{content:'-';position:absolute;left:0;color:var(--text2)}
 .rights-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem;margin-top:.75rem}
 .rights-col h4{font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem}
 .rights-col.keep h4{color:var(--green)}
@@ -267,54 +184,124 @@ textarea:focus{outline:none;border-color:var(--accent)}
 .rights-col.unclear-rights h4{color:var(--amber)}
 .rights-col ul{list-style:none}
 .rights-col li{font-size:.85rem;padding:.25rem 0;color:var(--text)}
-
-/* Priority recommendations */
-.priority-rec{
-  display:flex;align-items:flex-start;gap:.6rem;padding:.5rem 0;
-  border-bottom:1px solid var(--border);font-size:.9rem;
-}
+.priority-rec{display:flex;align-items:flex-start;gap:.6rem;padding:.5rem 0;border-bottom:1px solid var(--border);font-size:.9rem}
 .priority-rec:last-child{border-bottom:none}
-.priority-badge{
-  font-size:.65rem;padding:.15rem .45rem;border-radius:8px;
-  font-weight:700;text-transform:uppercase;white-space:nowrap;flex-shrink:0;margin-top:.1rem;
-}
+.priority-badge{font-size:.65rem;padding:.15rem .45rem;border-radius:8px;font-weight:700;text-transform:uppercase;white-space:nowrap;flex-shrink:0;margin-top:.1rem}
 .priority-critical{background:rgba(255,82,82,.2);color:var(--red)}
 .priority-high{background:rgba(255,82,82,.1);color:#ff8a80}
 .priority-medium{background:rgba(255,171,64,.15);color:var(--amber)}
 .priority-low{background:rgba(0,230,118,.12);color:var(--green)}
-
-/* Red flags */
-.red-flag{
-  padding:.5rem .75rem;margin:.3rem 0;border-radius:8px;
-  background:rgba(255,82,82,.06);border:1px solid rgba(255,82,82,.15);
-  font-size:.88rem;color:var(--text);
+.red-flag{padding:.5rem .75rem;margin:.3rem 0;border-radius:8px;background:rgba(255,82,82,.06);border:1px solid rgba(255,82,82,.15);font-size:.88rem;color:var(--text)}
+/* File upload */
+.upload-zone{
+  border:2px dashed var(--border);border-radius:10px;padding:2rem;
+  text-align:center;cursor:pointer;transition:all .2s;
+  background:var(--surface2);margin-top:.75rem;
 }
-
-/* Footer */
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:rgba(108,92,231,.05)}
+.upload-zone p{color:var(--text2);font-size:.9rem}
+.upload-zone .file-name{color:var(--accent2);font-weight:600;margin-top:.5rem;font-size:.85rem}
+/* AI crawl checkbox */
+.crawl-option{display:flex;align-items:center;gap:.5rem;margin-top:.5rem}
+.crawl-option input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+.crawl-option label{font-size:.85rem;color:var(--text2);cursor:pointer}
+/* Settings panel */
+.settings-panel{margin-bottom:1.5rem}
+.settings-toggle{
+  display:flex;align-items:center;gap:.5rem;cursor:pointer;
+  color:var(--text2);font-size:.85rem;padding:.5rem 0;
+}
+.settings-toggle:hover{color:var(--accent2)}
+.settings-body{display:none;padding:1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-top:.5rem}
+.settings-body.open{display:block}
+.settings-body .field{margin-bottom:.75rem}
+.settings-body .field label{display:block;font-size:.8rem;color:var(--text2);margin-bottom:.3rem}
+.settings-body .field input{
+  width:100%;padding:.55rem .75rem;background:var(--surface2);
+  border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.85rem;
+}
+.settings-body .field input:focus{outline:none;border-color:var(--accent)}
+.settings-note{font-size:.75rem;color:var(--text2);margin-top:.25rem;font-style:italic}
+/* Tier comparison table */
+.tier-table-wrap{overflow-x:auto;margin-top:1rem}
+.tier-table{width:100%;border-collapse:collapse;font-size:.85rem}
+.tier-table th{padding:.75rem .5rem;text-align:left;border-bottom:2px solid var(--border);color:var(--accent2);font-weight:700;white-space:nowrap}
+.tier-table td{padding:.6rem .5rem;border-bottom:1px solid var(--border);vertical-align:top}
+.tier-table tr:hover td{background:rgba(108,92,231,.03)}
+.tier-table .cat-label{font-weight:600;color:var(--text);white-space:nowrap;min-width:140px}
+.cell-covered{color:var(--green)}
+.cell-not-covered{color:var(--red)}
+.cell-unclear{color:var(--amber)}
+.cell-detail{font-size:.78rem;color:var(--text2);margin-top:.2rem}
+/* Deep dive cards */
+.deep-dive{border-left:3px solid var(--accent);padding-left:1rem;margin:.75rem 0}
+.deep-dive h4{font-size:.9rem;color:var(--accent2);margin-bottom:.4rem}
+.deep-dive p,.deep-dive li{font-size:.85rem;color:var(--text2);line-height:1.5}
+.deep-dive ul{list-style:none;margin-top:.3rem}
+.deep-dive li{padding:.15rem 0;padding-left:1rem;position:relative}
+.deep-dive li::before{content:'>';position:absolute;left:0;color:var(--accent)}
+/* Tier mode note */
+.mode-note{font-size:.8rem;color:var(--text2);margin-top:.5rem;font-style:italic}
 footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.8rem}
 </style>
 </head>
 <body>
-
 <div class="container">
   <header>
-    <h1>⚡ AI Terms Analyzer</h1>
-    <p>Interrogate any GenAI platform's Terms & Conditions — instantly.</p>
+    <h1>AI Terms Analyzer</h1>
+    <p>Interrogate any GenAI platform's Terms &amp; Conditions — URL, paste, or upload.</p>
   </header>
+
+  <!-- Settings Panel -->
+  <div class="settings-panel">
+    <div class="settings-toggle" onclick="toggleSettings()">
+      <span>&#9881;</span> <span>API Configuration</span> <span id="settings-arrow">&#9654;</span>
+    </div>
+    <div class="settings-body" id="settings-body">
+      <div class="field">
+        <label for="cfg-api-key">API Key</label>
+        <input type="password" id="cfg-api-key" placeholder="sk-..." oninput="saveSettings()">
+      </div>
+      <div class="field">
+        <label for="cfg-base-url">Base URL</label>
+        <input type="text" id="cfg-base-url" placeholder="https://api.studio.nebius.com/v1" oninput="saveSettings()">
+      </div>
+      <div class="field">
+        <label for="cfg-model">Model</label>
+        <input type="text" id="cfg-model" placeholder="meta-llama/Meta-Llama-3.1-70B-Instruct" oninput="saveSettings()">
+      </div>
+      <div class="settings-note">Optional — uses server default if not set. Required for AI-assisted crawl.</div>
+    </div>
+  </div>
 
   <!-- Input -->
   <div class="card" id="input-card">
     <div class="input-group">
-      <input type="text" id="url-input" placeholder="Paste a T&Cs / ToS URL (e.g. https://openai.com/policies/terms-of-use)">
+      <input type="text" id="url-input" placeholder="Paste a T&amp;Cs / ToS URL (e.g. https://openai.com/policies/terms-of-use)">
       <button class="btn btn-primary" id="analyse-btn" onclick="runAnalysis()">
         <span id="btn-label">Analyse</span>
       </button>
     </div>
+    <div class="crawl-option">
+      <input type="checkbox" id="ai-crawl-check">
+      <label for="ai-crawl-check">AI-assisted deep crawl (discovers T&amp;Cs, privacy, pricing pages automatically)</label>
+    </div>
+
     <div class="or-divider">— or paste the text directly —</div>
-    <textarea id="text-input" placeholder="Paste Terms & Conditions text here…"></textarea>
+    <textarea id="text-input" placeholder="Paste Terms &amp; Conditions text here..."></textarea>
+
+    <div class="or-divider">— or upload a document —</div>
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+      <p>Drop files here or click to browse</p>
+      <p style="font-size:.75rem;color:var(--text2);margin-top:.25rem">PDF, DOCX, TXT, HTML, RTF</p>
+      <div class="file-name" id="file-name"></div>
+      <input type="file" id="file-input" accept=".pdf,.docx,.doc,.txt,.html,.htm,.rtf" style="display:none" onchange="handleFileSelect(this)">
+    </div>
+
     <div class="mode-toggle">
       <button class="mode-btn active" id="mode-quick" onclick="setMode('quick')">Quick Analysis</button>
       <button class="mode-btn" id="mode-deep" onclick="setMode('deep')">Deep Analysis</button>
+      <button class="mode-btn" id="mode-tier" onclick="setMode('tier-compare')">Tier Comparison</button>
     </div>
     <div class="tier-select" id="tier-select" style="display:none">
       <label for="tier-dropdown" style="font-size:.85rem;color:var(--text2);margin-right:.5rem">Pricing Tier:</label>
@@ -331,20 +318,20 @@ footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.8rem}
         <option value="API">API / Pay-as-you-go</option>
       </select>
     </div>
+    <div class="mode-note" id="mode-note" style="display:none"></div>
   </div>
 
   <!-- Loader -->
   <div class="loader" id="loader">
     <div class="spinner"></div>
-    <p id="loader-text">Fetching &amp; analysing terms… this takes 15-30 seconds.</p>
+    <p id="loader-text">Fetching &amp; analysing terms... this takes 15-30 seconds.</p>
   </div>
 
   <!-- Error -->
   <div class="error-msg" id="error-msg"></div>
 
-  <!-- Results -->
+  <!-- Quick Analysis Results -->
   <div id="results">
-    <!-- Verdict Banner -->
     <div class="verdict-banner card">
       <h2>Platform</h2>
       <div class="platform" id="r-platform"></div>
@@ -359,36 +346,27 @@ footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.8rem}
         <div class="risk-value" id="r-risk-value"></div>
       </div>
     </div>
-
-    <!-- Categories -->
     <div class="card">
-      <h3 style="margin-bottom:.25rem">📋 Detailed Breakdown</h3>
+      <h3 style="margin-bottom:.25rem">Detailed Breakdown</h3>
       <p style="color:var(--text2);font-size:.85rem;margin-bottom:.5rem">How this platform handles your content and rights.</p>
       <div class="cat-grid" id="r-categories"></div>
     </div>
-
-    <!-- Checklist -->
     <div class="card">
-      <h3>✅ Quick Checklist</h3>
+      <h3>Quick Checklist</h3>
       <ul class="checklist" id="r-checklist"></ul>
     </div>
-
-    <!-- Key Quotes -->
     <div class="card">
-      <h3 style="margin-bottom:.75rem">💬 Key Quotes from T&Cs</h3>
+      <h3 style="margin-bottom:.75rem">Key Quotes from T&amp;Cs</h3>
       <div id="r-quotes"></div>
     </div>
-
-    <!-- Recommendations -->
     <div class="card">
-      <h3 style="margin-bottom:.5rem">🎯 Recommendations</h3>
+      <h3 style="margin-bottom:.5rem">Recommendations</h3>
       <ul class="rec-list" id="r-recs"></ul>
     </div>
   </div>
 
   <!-- Deep Analysis Results -->
   <div id="deep-results">
-    <!-- Verdict Banner (reused style) -->
     <div class="verdict-banner card">
       <h2>Platform</h2>
       <div class="platform" id="dr-platform"></div>
@@ -404,64 +382,145 @@ footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.8rem}
         <div class="risk-value" id="dr-risk-value"></div>
       </div>
     </div>
-
-    <!-- Tier Analysis (shown when a tier is selected) -->
     <div class="card" id="dr-tier-card" style="display:none">
       <h3 style="margin-bottom:.5rem">Tier-Specific Analysis</h3>
       <p style="color:var(--text2);font-size:.85rem;margin-bottom:.5rem">How your selected tier affects your rights.</p>
       <div id="dr-tier-name" style="font-weight:700;color:var(--accent2);margin-bottom:.5rem"></div>
       <div class="rights-grid" id="dr-tier-details"></div>
     </div>
-
-    <!-- Clause-by-Clause -->
     <div class="card">
       <h3 style="margin-bottom:.25rem">Clause-by-Clause Analysis</h3>
       <p style="color:var(--text2);font-size:.85rem;margin-bottom:.75rem">Every significant provision, decoded.</p>
       <div id="dr-clauses"></div>
     </div>
-
-    <!-- Hidden Concerns -->
     <div class="card">
       <h3 style="margin-bottom:.75rem">Hidden Concerns</h3>
       <div id="dr-concerns"></div>
     </div>
-
-    <!-- User Rights Summary -->
     <div class="card">
       <h3 style="margin-bottom:.5rem">Your Rights Summary</h3>
       <div class="rights-grid" id="dr-rights"></div>
     </div>
-
-    <!-- Industry Comparison -->
     <div class="card">
       <h3 style="margin-bottom:.5rem">Compared to Industry Norms</h3>
       <div class="comparison-grid" id="dr-comparison"></div>
     </div>
-
-    <!-- Legal Red Flags -->
     <div class="card">
       <h3 style="margin-bottom:.75rem">Legal Red Flags</h3>
       <div id="dr-redflags"></div>
     </div>
-
-    <!-- Prioritised Recommendations -->
     <div class="card">
       <h3 style="margin-bottom:.75rem">Prioritised Recommendations</h3>
       <div id="dr-recs"></div>
     </div>
   </div>
 
-  <footer>AI Terms Analyzer &middot; Powered by Nebius AI &amp; Claude</footer>
+  <!-- Tier Comparison Results -->
+  <div id="tier-results">
+    <div class="verdict-banner card">
+      <h2>Platform</h2>
+      <div class="platform" id="tr-platform"></div>
+      <div class="verdict-text" id="tr-summary"></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:.5rem">Tier Comparison Matrix</h3>
+      <p style="color:var(--text2);font-size:.85rem;margin-bottom:.5rem">Side-by-side comparison of what each tier offers.</p>
+      <div class="tier-table-wrap" id="tr-matrix"></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:.75rem">Indemnity Deep Dive</h3>
+      <div class="deep-dive" id="tr-indemnity"></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:.75rem">Provenance Deep Dive</h3>
+      <div class="deep-dive" id="tr-provenance"></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:.5rem">Risk Assessment</h3>
+      <div id="tr-risk"></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:.5rem">Upgrade Recommendation</h3>
+      <div id="tr-upgrade" style="font-size:.92rem;line-height:1.5"></div>
+    </div>
+  </div>
+
+  <footer>AI Terms Analyzer &middot; Powered by Nebius AI</footer>
 </div>
-
 <script>
-let analysisMode = "quick"; // "quick" or "deep"
+let analysisMode = "quick";
+let selectedFile = null;
 
+// Settings
+function toggleSettings() {
+  const body = document.getElementById("settings-body");
+  const arrow = document.getElementById("settings-arrow");
+  body.classList.toggle("open");
+  arrow.textContent = body.classList.contains("open") ? "\u25BC" : "\u25B6";
+}
+
+function saveSettings() {
+  const cfg = {
+    api_key: document.getElementById("cfg-api-key").value,
+    base_url: document.getElementById("cfg-base-url").value,
+    model: document.getElementById("cfg-model").value,
+  };
+  localStorage.setItem("ai_terms_config", JSON.stringify(cfg));
+}
+
+function loadSettings() {
+  try {
+    const cfg = JSON.parse(localStorage.getItem("ai_terms_config") || "{}");
+    if (cfg.api_key) document.getElementById("cfg-api-key").value = cfg.api_key;
+    if (cfg.base_url) document.getElementById("cfg-base-url").value = cfg.base_url;
+    if (cfg.model) document.getElementById("cfg-model").value = cfg.model;
+  } catch (e) {}
+}
+
+function getApiConfig() {
+  try {
+    return JSON.parse(localStorage.getItem("ai_terms_config") || "{}");
+  } catch (e) { return {}; }
+}
+
+// File upload
+function handleFileSelect(input) {
+  if (input.files && input.files[0]) {
+    selectedFile = input.files[0];
+    document.getElementById("file-name").textContent = selectedFile.name;
+  }
+}
+
+const uploadZone = document.getElementById("upload-zone");
+uploadZone.addEventListener("dragover", e => { e.preventDefault(); uploadZone.classList.add("dragover"); });
+uploadZone.addEventListener("dragleave", () => uploadZone.classList.remove("dragover"));
+uploadZone.addEventListener("drop", e => {
+  e.preventDefault();
+  uploadZone.classList.remove("dragover");
+  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+    selectedFile = e.dataTransfer.files[0];
+    document.getElementById("file-name").textContent = selectedFile.name;
+    document.getElementById("file-input").files = e.dataTransfer.files;
+  }
+});
+
+// Mode toggle
 function setMode(mode) {
   analysisMode = mode;
   document.getElementById("mode-quick").classList.toggle("active", mode === "quick");
   document.getElementById("mode-deep").classList.toggle("active", mode === "deep");
+  document.getElementById("mode-tier").classList.toggle("active", mode === "tier-compare");
   document.getElementById("tier-select").style.display = mode === "deep" ? "flex" : "none";
+  const note = document.getElementById("mode-note");
+  if (mode === "tier-compare") {
+    note.style.display = "block";
+    note.textContent = "Auto-detects all pricing tiers and compares indemnity, provenance, ownership, and more.";
+  } else if (mode === "deep") {
+    note.style.display = "block";
+    note.textContent = "Clause-by-clause analysis with industry comparison and hidden concerns.";
+  } else {
+    note.style.display = "none";
+  }
 }
 
 const CATEGORY_LABELS = {
@@ -475,235 +534,139 @@ const CATEGORY_LABELS = {
   ip_indemnification: "IP Indemnification",
 };
 
-const GOOD_STATUSES = new Set([
-  "No","User","Deleted","Yes","Minimal","Weak","Opt-out","Configurable","Anonymised"
-]);
-const BAD_STATUSES = new Set([
-  "Yes","Platform","Retained","Strict","Strong"
-]);
-
 function statusClass(category, status) {
-  // Context-dependent: "Yes" is good for enterprise_exclusions/ip_indemnification but bad for training
   const goodWhenYes = new Set(["enterprise_exclusions","ip_indemnification"]);
   const s = status.trim();
   if (s === "Unclear") return "s-neutral";
   if (s === "Yes" && goodWhenYes.has(category)) return "s-good";
   if (s === "No" && goodWhenYes.has(category)) return "s-bad";
-  // training_on_user_content
-  if (category === "training_on_user_content") {
-    if (s === "No") return "s-good";
-    if (s === "Yes") return "s-bad";
-    return "s-warn";
-  }
-  if (category === "ownership_of_outputs") {
-    if (s === "User") return "s-good";
-    if (s === "Platform") return "s-bad";
-    return "s-warn";
-  }
-  if (category === "data_retention") {
-    if (s === "Deleted" || s === "Configurable") return "s-good";
-    if (s === "Retained") return "s-bad";
-    return "s-warn";
-  }
-  if (category === "third_party_sharing") {
-    if (s === "No" || s === "Anonymised") return "s-good";
-    if (s === "Yes") return "s-bad";
-    return "s-warn";
-  }
-  if (category === "content_restrictions") {
-    if (s === "Minimal") return "s-good";
-    if (s === "Strict") return "s-bad";
-    return "s-warn";
-  }
-  if (category === "liability_limitation") {
-    if (s === "Weak") return "s-good";
-    if (s === "Strong") return "s-bad";
-    return "s-warn";
-  }
+  if (category === "training_on_user_content") { if (s === "No") return "s-good"; if (s === "Yes") return "s-bad"; return "s-warn"; }
+  if (category === "ownership_of_outputs") { if (s === "User") return "s-good"; if (s === "Platform") return "s-bad"; return "s-warn"; }
+  if (category === "data_retention") { if (s === "Deleted" || s === "Configurable") return "s-good"; if (s === "Retained") return "s-bad"; return "s-warn"; }
+  if (category === "third_party_sharing") { if (s === "No" || s === "Anonymised") return "s-good"; if (s === "Yes") return "s-bad"; return "s-warn"; }
+  if (category === "content_restrictions") { if (s === "Minimal") return "s-good"; if (s === "Strict") return "s-bad"; return "s-warn"; }
+  if (category === "liability_limitation") { if (s === "Weak") return "s-good"; if (s === "Strong") return "s-bad"; return "s-warn"; }
   return "s-neutral";
 }
 
-function classificationBadge(cls) {
-  const c = (cls || "unclear").toLowerCase();
-  return `badge-${c}`;
+function classificationBadge(cls) { return "badge-" + (cls || "unclear").toLowerCase(); }
+
+function esc(str) {
+  const d = document.createElement("div");
+  d.textContent = str;
+  return d.innerHTML;
 }
 
 function renderResults(data) {
   document.getElementById("r-platform").textContent = data.platform_name || "Unknown";
   document.getElementById("r-verdict").textContent = data.overall_verdict || "";
-
   const badge = document.getElementById("r-badge");
   badge.textContent = data.classification || "Unclear";
   badge.className = "badge " + classificationBadge(data.classification);
-
-  document.getElementById("r-source").textContent = data.source_url ? `Source: ${data.source_url}` : "";
-
-  // Risk
+  document.getElementById("r-source").textContent = data.source_url ? "Source: " + data.source_url : "";
   const risk = data.risk_score || 0;
-  document.getElementById("r-risk-bar").style.width = `${risk * 10}%`;
-  document.getElementById("r-risk-value").textContent = `${risk} / 10`;
-
-  // Categories
+  document.getElementById("r-risk-bar").style.width = (risk * 10) + "%";
+  document.getElementById("r-risk-value").textContent = risk + " / 10";
   const catGrid = document.getElementById("r-categories");
   catGrid.innerHTML = "";
   if (data.categories) {
     for (const [key, val] of Object.entries(data.categories)) {
       const cls = statusClass(key, val.status || "Unclear");
-      catGrid.innerHTML += `
-        <div class="cat-card">
-          <h4>${CATEGORY_LABELS[key] || key}</h4>
-          <div class="status ${cls}">${val.status}</div>
-          <div class="detail">${val.detail}</div>
-        </div>`;
+      catGrid.innerHTML += '<div class="cat-card"><h4>' + esc(CATEGORY_LABELS[key] || key) + '</h4><div class="status ' + cls + '">' + esc(val.status) + '</div><div class="detail">' + esc(val.detail) + '</div></div>';
     }
   }
-
-  // Checklist
   const cl = document.getElementById("r-checklist");
   cl.innerHTML = "";
-  (data.checklist || []).forEach(item => {
-    const icon = item.pass === true ? "✅" : item.pass === false ? "❌" : "❓";
-    cl.innerHTML += `<li><span class="check-icon">${icon}</span>${item.item}</li>`;
+  (data.checklist || []).forEach(function(item) {
+    const icon = item.pass === true ? "PASS" : item.pass === false ? "FAIL" : "?";
+    const iconCls = item.pass === true ? "s-good" : item.pass === false ? "s-bad" : "s-neutral";
+    cl.innerHTML += '<li><span class="check-icon ' + iconCls + '">' + icon + '</span>' + esc(item.item) + '</li>';
   });
-
-  // Quotes
   const qd = document.getElementById("r-quotes");
   qd.innerHTML = "";
-  (data.key_quotes || []).forEach(q => {
-    qd.innerHTML += `<div class="quote">"${q}"</div>`;
-  });
-
-  // Recommendations
+  (data.key_quotes || []).forEach(function(q) { qd.innerHTML += '<div class="quote">"' + esc(q) + '"</div>'; });
   const rl = document.getElementById("r-recs");
   rl.innerHTML = "";
-  (data.recommendations || []).forEach(r => {
-    rl.innerHTML += `<li>${r}</li>`;
-  });
-
+  (data.recommendations || []).forEach(function(r) { rl.innerHTML += '<li>' + esc(r) + '</li>'; });
   document.getElementById("results").classList.add("active");
 }
 
 function renderDeepResults(data) {
   document.getElementById("dr-platform").textContent = data.platform_name || "Unknown";
   document.getElementById("dr-summary").textContent = data.executive_summary || "";
-
   const badge = document.getElementById("dr-badge");
   badge.textContent = data.classification || "Unclear";
   badge.className = "badge " + classificationBadge(data.classification);
-
-  document.getElementById("dr-doctype").textContent = data.document_type ? `Type: ${data.document_type}` : "";
-  document.getElementById("dr-source").textContent = data.source_url ? `Source: ${data.source_url}` : "";
-
-  // Risk
+  document.getElementById("dr-doctype").textContent = data.document_type ? "Type: " + data.document_type : "";
+  document.getElementById("dr-source").textContent = data.source_url ? "Source: " + data.source_url : "";
   const risk = data.risk_score || 0;
-  document.getElementById("dr-risk-bar").style.width = `${risk * 10}%`;
-  document.getElementById("dr-risk-value").textContent = `${risk} / 10`;
+  document.getElementById("dr-risk-bar").style.width = (risk * 10) + "%";
+  document.getElementById("dr-risk-value").textContent = risk + " / 10";
 
-  // Clauses
   const clausesEl = document.getElementById("dr-clauses");
   clausesEl.innerHTML = "";
-  (data.clauses || []).forEach(c => {
-    const riskCls = `risk-${(c.risk_level || "informational").toLowerCase()}`;
-    const flags = (c.flags || []).map(f => `<span class="flag-tag">${f}</span>`).join("");
-    clausesEl.innerHTML += `
-      <div class="clause-card">
-        <div class="clause-header">
-          <h4>${c.clause_title || ""}</h4>
-          <div><span class="risk-badge ${riskCls}">${c.risk_level || ""}</span> <span class="cat-tag">${c.category || ""}</span></div>
-        </div>
-        <div class="clause-quote">"${c.original_text || ""}"</div>
-        <div class="clause-plain">${c.plain_english || ""}</div>
-        ${flags ? `<div class="clause-flags">${flags}</div>` : ""}
-      </div>`;
+  (data.clauses || []).forEach(function(c) {
+    const riskCls = "risk-" + (c.risk_level || "informational").toLowerCase();
+    const flags = (c.flags || []).map(function(f) { return '<span class="flag-tag">' + esc(f) + '</span>'; }).join("");
+    clausesEl.innerHTML += '<div class="clause-card"><div class="clause-header"><h4>' + esc(c.clause_title || "") + '</h4><div><span class="risk-badge ' + riskCls + '">' + esc(c.risk_level || "") + '</span> <span class="cat-tag">' + esc(c.category || "") + '</span></div></div><div class="clause-quote">"' + esc(c.original_text || "") + '"</div><div class="clause-plain">' + esc(c.plain_english || "") + '</div>' + (flags ? '<div class="clause-flags">' + flags + '</div>' : '') + '</div>';
   });
 
-  // Hidden concerns
   const concernsEl = document.getElementById("dr-concerns");
   concernsEl.innerHTML = "";
-  (data.hidden_concerns || []).forEach(h => {
-    const sevCls = `risk-${(h.severity || "medium").toLowerCase()}`;
-    concernsEl.innerHTML += `
-      <div class="concern-card">
-        <h4>${h.title} <span class="risk-badge ${sevCls}">${h.severity}</span></h4>
-        <p>${h.description}</p>
-      </div>`;
+  (data.hidden_concerns || []).forEach(function(h) {
+    const sevCls = "risk-" + (h.severity || "medium").toLowerCase();
+    concernsEl.innerHTML += '<div class="concern-card"><h4>' + esc(h.title) + ' <span class="risk-badge ' + sevCls + '">' + esc(h.severity) + '</span></h4><p>' + esc(h.description) + '</p></div>';
   });
 
-  // Rights summary
   const rightsEl = document.getElementById("dr-rights");
   rightsEl.innerHTML = "";
   const rights = data.user_rights_summary || {};
-  const rightsCols = [
+  [
     { key: "what_you_keep", label: "What You Keep", cls: "keep" },
     { key: "what_you_give_up", label: "What You Give Up", cls: "give-up" },
     { key: "what_is_unclear", label: "What Is Unclear", cls: "unclear-rights" },
-  ];
-  rightsCols.forEach(col => {
-    const items = (rights[col.key] || []).map(i => `<li>${i}</li>`).join("");
-    rightsEl.innerHTML += `
-      <div class="rights-col ${col.cls}">
-        <h4>${col.label}</h4>
-        <ul>${items || "<li>None identified</li>"}</ul>
-      </div>`;
+  ].forEach(function(col) {
+    const items = (rights[col.key] || []).map(function(i) { return '<li>' + esc(i) + '</li>'; }).join("");
+    rightsEl.innerHTML += '<div class="rights-col ' + col.cls + '"><h4>' + col.label + '</h4><ul>' + (items || '<li>None identified</li>') + '</ul></div>';
   });
 
-  // Industry comparison
   const compEl = document.getElementById("dr-comparison");
   compEl.innerHTML = "";
   const comp = data.comparison_to_industry || {};
-  const compCols = [
+  [
     { key: "better_than_average", label: "Better Than Average", cls: "better" },
     { key: "worse_than_average", label: "Worse Than Average", cls: "worse" },
     { key: "standard", label: "Industry Standard", cls: "standard" },
-  ];
-  compCols.forEach(col => {
-    const items = (comp[col.key] || []).map(i => `<li>${i}</li>`).join("");
-    compEl.innerHTML += `
-      <div class="comparison-col ${col.cls}">
-        <h4>${col.label}</h4>
-        <ul>${items || "<li>—</li>"}</ul>
-      </div>`;
+  ].forEach(function(col) {
+    const items = (comp[col.key] || []).map(function(i) { return '<li>' + esc(i) + '</li>'; }).join("");
+    compEl.innerHTML += '<div class="comparison-col ' + col.cls + '"><h4>' + col.label + '</h4><ul>' + (items || '<li>-</li>') + '</ul></div>';
   });
 
-  // Red flags
   const rfEl = document.getElementById("dr-redflags");
   rfEl.innerHTML = "";
-  (data.legal_red_flags || []).forEach(f => {
-    rfEl.innerHTML += `<div class="red-flag">${f}</div>`;
-  });
+  (data.legal_red_flags || []).forEach(function(f) { rfEl.innerHTML += '<div class="red-flag">' + esc(f) + '</div>'; });
 
-  // Recommendations
   const recsEl = document.getElementById("dr-recs");
   recsEl.innerHTML = "";
-  (data.actionable_recommendations || []).forEach(r => {
-    const pCls = `priority-${(r.priority || "medium").toLowerCase()}`;
-    recsEl.innerHTML += `
-      <div class="priority-rec">
-        <span class="priority-badge ${pCls}">${r.priority}</span>
-        <span>${r.action}</span>
-      </div>`;
+  (data.actionable_recommendations || []).forEach(function(r) {
+    const pCls = "priority-" + (r.priority || "medium").toLowerCase();
+    recsEl.innerHTML += '<div class="priority-rec"><span class="priority-badge ' + pCls + '">' + esc(r.priority) + '</span><span>' + esc(r.action) + '</span></div>';
   });
 
-  // Tier analysis
   const tierCard = document.getElementById("dr-tier-card");
   const ta = data.tier_analysis;
   if (ta && ta.selected_tier) {
     tierCard.style.display = "block";
-    document.getElementById("dr-tier-name").textContent = `Selected Tier: ${ta.selected_tier}`;
+    document.getElementById("dr-tier-name").textContent = "Selected Tier: " + ta.selected_tier;
     const tierDetails = document.getElementById("dr-tier-details");
     tierDetails.innerHTML = "";
-    const tierCols = [
+    [
       { key: "tier_specific_benefits", label: "Tier Benefits", cls: "keep" },
       { key: "tier_specific_restrictions", label: "Tier Restrictions", cls: "give-up" },
       { key: "upgrade_considerations", label: "Upgrade Considerations", cls: "unclear-rights" },
-    ];
-    tierCols.forEach(col => {
-      const items = (ta[col.key] || []).map(i => `<li>${i}</li>`).join("");
-      tierDetails.innerHTML += `
-        <div class="rights-col ${col.cls}">
-          <h4>${col.label}</h4>
-          <ul>${items || "<li>None identified</li>"}</ul>
-        </div>`;
+    ].forEach(function(col) {
+      const items = (ta[col.key] || []).map(function(i) { return '<li>' + esc(i) + '</li>'; }).join("");
+      tierDetails.innerHTML += '<div class="rights-col ' + col.cls + '"><h4>' + col.label + '</h4><ul>' + (items || '<li>None identified</li>') + '</ul></div>';
     });
   } else {
     tierCard.style.display = "none";
@@ -712,47 +675,168 @@ function renderDeepResults(data) {
   document.getElementById("deep-results").classList.add("active");
 }
 
+function renderTierResults(data) {
+  document.getElementById("tr-platform").textContent = data.platform_name || "Unknown";
+  document.getElementById("tr-summary").textContent = data.comparison_summary || "";
+
+  // Build comparison table
+  const matrix = data.tier_matrix || [];
+  const categories = [
+    { key: "indemnity", label: "IP Indemnification", field: "covered" },
+    { key: "provenance", label: "Provenance / Audit", field: "covered" },
+    { key: "output_ownership", label: "Output Ownership", field: "covered" },
+    { key: "commercial_use", label: "Commercial Use", field: "covered" },
+    { key: "training_opt_out", label: "Training Opt-out", field: "covered" },
+    { key: "license_to_provider", label: "Licence to Provider", field: "scope" },
+    { key: "data_retention", label: "Data Retention", field: "policy" },
+    { key: "third_party_sharing", label: "Third-Party Sharing", field: "shared" },
+  ];
+
+  let tableHtml = '<table class="tier-table"><thead><tr><th>Category</th>';
+  matrix.forEach(function(t) { tableHtml += '<th>' + esc(t.tier_name) + '</th>'; });
+  tableHtml += '</tr></thead><tbody>';
+
+  categories.forEach(function(cat) {
+    tableHtml += '<tr><td class="cat-label">' + esc(cat.label) + '</td>';
+    matrix.forEach(function(tier) {
+      const item = tier[cat.key] || {};
+      const val = item[cat.field];
+      let cellCls, cellText;
+      if (cat.field === "covered") {
+        if (val === true) { cellCls = "cell-covered"; cellText = "Yes"; }
+        else if (val === false) { cellCls = "cell-not-covered"; cellText = "No"; }
+        else { cellCls = "cell-unclear"; cellText = "Unclear"; }
+      } else if (cat.field === "shared") {
+        if (val === true) { cellCls = "cell-not-covered"; cellText = "Yes"; }
+        else if (val === false) { cellCls = "cell-covered"; cellText = "No"; }
+        else { cellCls = "cell-unclear"; cellText = "Unclear"; }
+      } else {
+        // scope or policy
+        const v = val || "Unclear";
+        if (v === "None" || v === "Limited" || v === "Deleted" || v === "Configurable") cellCls = "cell-covered";
+        else if (v === "Broad" || v === "Retained") cellCls = "cell-not-covered";
+        else cellCls = "cell-unclear";
+        cellText = v;
+      }
+      const detail = item.detail || "";
+      tableHtml += '<td><span class="' + cellCls + '" style="font-weight:700">' + esc(cellText) + '</span>';
+      if (detail) tableHtml += '<div class="cell-detail">' + esc(detail) + '</div>';
+      tableHtml += '</td>';
+    });
+    tableHtml += '</tr>';
+  });
+  tableHtml += '</tbody></table>';
+  document.getElementById("tr-matrix").innerHTML = tableHtml;
+
+  // Indemnity deep dive
+  const ind = data.indemnity_deep_dive || {};
+  let indHtml = '<h4>Indemnity Coverage</h4>';
+  indHtml += '<p>' + esc(ind.overview || "No indemnity information found.") + '</p>';
+  if (ind.which_tiers_covered && ind.which_tiers_covered.length) {
+    indHtml += '<p style="margin-top:.4rem"><strong>Covered tiers:</strong> ' + esc(ind.which_tiers_covered.join(", ")) + '</p>';
+  }
+  if (ind.exclusions && ind.exclusions.length) {
+    indHtml += '<ul>' + ind.exclusions.map(function(e) { return '<li>' + esc(e) + '</li>'; }).join("") + '</ul>';
+  }
+  if (ind.caps) indHtml += '<p style="margin-top:.3rem"><strong>Caps:</strong> ' + esc(ind.caps) + '</p>';
+  document.getElementById("tr-indemnity").innerHTML = indHtml;
+
+  // Provenance deep dive
+  const prov = data.provenance_deep_dive || {};
+  let provHtml = '<h4>Provenance &amp; Audit</h4>';
+  provHtml += '<p>' + esc(prov.overview || "No provenance information found.") + '</p>';
+  if (prov.which_tiers_covered && prov.which_tiers_covered.length) {
+    provHtml += '<p style="margin-top:.4rem"><strong>Covered tiers:</strong> ' + esc(prov.which_tiers_covered.join(", ")) + '</p>';
+  }
+  if (prov.capabilities && prov.capabilities.length) {
+    provHtml += '<ul>' + prov.capabilities.map(function(c) { return '<li>' + esc(c) + '</li>'; }).join("") + '</ul>';
+  }
+  document.getElementById("tr-provenance").innerHTML = provHtml;
+
+  // Risk assessment
+  const ra = data.risk_assessment || {};
+  let raHtml = '';
+  if (ra.lowest_risk_tier) raHtml += '<p><span class="cell-covered" style="font-weight:700">Lowest risk:</span> ' + esc(ra.lowest_risk_tier) + '</p>';
+  if (ra.highest_risk_tier) raHtml += '<p><span class="cell-not-covered" style="font-weight:700">Highest risk:</span> ' + esc(ra.highest_risk_tier) + '</p>';
+  if (ra.explanation) raHtml += '<p style="margin-top:.4rem;color:var(--text2);font-size:.88rem">' + esc(ra.explanation) + '</p>';
+  document.getElementById("tr-risk").innerHTML = raHtml || '<p style="color:var(--text2)">No risk assessment available.</p>';
+
+  // Upgrade recommendation
+  document.getElementById("tr-upgrade").textContent = data.upgrade_recommendation || "No upgrade recommendation available.";
+
+  document.getElementById("tier-results").classList.add("active");
+}
+
 async function runAnalysis() {
   const url = document.getElementById("url-input").value.trim();
   const rawText = document.getElementById("text-input").value.trim();
   const btn = document.getElementById("analyse-btn");
   const loader = document.getElementById("loader");
   const errorEl = document.getElementById("error-msg");
-  const results = document.getElementById("results");
-  const deepResults = document.getElementById("deep-results");
+  const aiCrawl = document.getElementById("ai-crawl-check").checked;
 
-  if (!url && !rawText) {
-    errorEl.textContent = "Please enter a URL or paste T&C text.";
+  if (!url && !rawText && !selectedFile) {
+    errorEl.textContent = "Please enter a URL, paste T&C text, or upload a file.";
     errorEl.classList.add("active");
     return;
   }
 
   errorEl.classList.remove("active");
-  results.classList.remove("active");
-  deepResults.classList.remove("active");
+  document.getElementById("results").classList.remove("active");
+  document.getElementById("deep-results").classList.remove("active");
+  document.getElementById("tier-results").classList.remove("active");
   loader.classList.add("active");
-  document.getElementById("loader-text").innerHTML = analysisMode === "deep"
-    ? "Running deep clause-by-clause analysis with Claude… this may take 30-60 seconds."
-    : "Fetching &amp; analysing terms… this takes 15-30 seconds.";
   btn.disabled = true;
 
-  const endpoint = analysisMode === "deep" ? "/api/deep-analyse" : "/api/analyse";
+  const loaderTexts = {
+    "quick": "Fetching &amp; analysing terms... this takes 15-30 seconds.",
+    "deep": "Running deep clause-by-clause analysis... this may take 30-60 seconds.",
+    "tier-compare": "Analysing tier differences... this may take 30-60 seconds.",
+  };
+  let lt = loaderTexts[analysisMode] || loaderTexts["quick"];
+  if (aiCrawl) lt = "AI-assisted crawl in progress... discovering and analysing multiple pages. This may take 1-2 minutes.";
+  document.getElementById("loader-text").innerHTML = lt;
+
+  const cfg = getApiConfig();
   const tier = document.getElementById("tier-dropdown").value;
 
   try {
-    const payload = {url, raw_text: rawText};
-    if (analysisMode === "deep" && tier) payload.tier = tier;
+    let resp, data;
 
-    const resp = await fetch(endpoint, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(payload),
-    });
-    const data = await resp.json();
-    if (!resp.ok) {
-      throw new Error(data.error || "Analysis failed");
+    if (selectedFile) {
+      // File upload
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("mode", analysisMode);
+      if (tier) formData.append("tier", tier);
+      if (cfg.api_key) formData.append("api_key", cfg.api_key);
+      if (cfg.base_url) formData.append("api_base_url", cfg.base_url);
+      if (cfg.model) formData.append("api_model", cfg.model);
+
+      resp = await fetch("/api/upload", { method: "POST", body: formData });
+    } else {
+      // JSON request
+      const endpoints = { "quick": "/api/analyse", "deep": "/api/deep-analyse", "tier-compare": "/api/tier-compare" };
+      const endpoint = endpoints[analysisMode] || "/api/analyse";
+      const payload = { url: url, raw_text: rawText, ai_crawl: aiCrawl };
+      if (analysisMode === "deep" && tier) payload.tier = tier;
+      if (cfg.api_key) payload.api_key = cfg.api_key;
+      if (cfg.base_url) payload.api_base_url = cfg.base_url;
+      if (cfg.model) payload.api_model = cfg.model;
+
+      resp = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
     }
-    if (analysisMode === "deep") {
+
+    data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || "Analysis failed");
+
+    if (analysisMode === "tier-compare") {
+      renderTierResults(data);
+    } else if (analysisMode === "deep") {
       renderDeepResults(data);
     } else {
       renderResults(data);
@@ -766,10 +850,8 @@ async function runAnalysis() {
   }
 }
 
-// Allow Enter on URL input
-document.getElementById("url-input").addEventListener("keydown", e => {
-  if (e.key === "Enter") runAnalysis();
-});
+document.getElementById("url-input").addEventListener("keydown", function(e) { if (e.key === "Enter") runAnalysis(); });
+loadSettings();
 </script>
 </body>
 </html>

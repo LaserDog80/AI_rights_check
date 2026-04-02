@@ -1,1 +1,1 @@
-# This file makes src a package.
+# AI Terms Analyzer — src package

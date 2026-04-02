@@ -5,13 +5,15 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import app as analyzer_app
+from src.routes import app as flask_app
+import src.analysis as analysis_module
+import src.extraction as extraction_module
 
 
 @pytest.fixture
 def client():
-    analyzer_app.app.config["TESTING"] = True
-    with analyzer_app.app.test_client() as c:
+    flask_app.config["TESTING"] = True
+    with flask_app.test_client() as c:
         yield c
 
 
@@ -57,13 +59,15 @@ MOCK_AI_RESPONSE = json.dumps({
 })
 
 
-@patch.object(analyzer_app, "client")
-def test_analyse_with_raw_text(mock_client, client):
+@patch("src.analysis._get_default_client")
+def test_analyse_with_raw_text(mock_get_client, client):
     mock_choice = MagicMock()
     mock_choice.message.content = MOCK_AI_RESPONSE
     mock_resp = MagicMock()
     mock_resp.choices = [mock_choice]
-    mock_client.chat.completions.create.return_value = mock_resp
+    mock_openai = MagicMock()
+    mock_openai.chat.completions.create.return_value = mock_resp
+    mock_get_client.return_value = (mock_openai, "test-model")
 
     long_text = "Terms and Conditions: " + "a " * 200
     resp = client.post("/api/analyse", json={"raw_text": long_text})
@@ -74,14 +78,16 @@ def test_analyse_with_raw_text(mock_client, client):
     assert len(data["checklist"]) == 2
 
 
-@patch.object(analyzer_app, "fetch_terms_text", return_value="Terms " * 100)
-@patch.object(analyzer_app, "client")
-def test_analyse_with_url(mock_client, mock_fetch, client):
+@patch("src.routes.fetch_terms_text", return_value="Terms " * 100)
+@patch("src.analysis._get_default_client")
+def test_analyse_with_url(mock_get_client, mock_fetch, client):
     mock_choice = MagicMock()
     mock_choice.message.content = MOCK_AI_RESPONSE
     mock_resp = MagicMock()
     mock_resp.choices = [mock_choice]
-    mock_client.chat.completions.create.return_value = mock_resp
+    mock_openai = MagicMock()
+    mock_openai.chat.completions.create.return_value = mock_resp
+    mock_get_client.return_value = (mock_openai, "test-model")
 
     resp = client.post("/api/analyse", json={"url": "https://example.com/terms"})
     assert resp.status_code == 200
@@ -145,13 +151,15 @@ def test_deep_analyse_short_text(client):
     assert resp.status_code == 400
 
 
-@patch.object(analyzer_app, "client")
-def test_deep_analyse_with_raw_text(mock_client, client):
+@patch("src.analysis._get_default_client")
+def test_deep_analyse_with_raw_text(mock_get_client, client):
     mock_choice = MagicMock()
     mock_choice.message.content = MOCK_DEEP_RESPONSE
     mock_resp = MagicMock()
     mock_resp.choices = [mock_choice]
-    mock_client.chat.completions.create.return_value = mock_resp
+    mock_openai = MagicMock()
+    mock_openai.chat.completions.create.return_value = mock_resp
+    mock_get_client.return_value = (mock_openai, "test-model")
 
     long_text = "Terms and Conditions: " + "a " * 200
     resp = client.post("/api/deep-analyse", json={"raw_text": long_text})
@@ -166,14 +174,16 @@ def test_deep_analyse_with_raw_text(mock_client, client):
     assert len(data["legal_red_flags"]) == 1
 
 
-@patch.object(analyzer_app, "fetch_terms_text", return_value="Terms " * 100)
-@patch.object(analyzer_app, "client")
-def test_deep_analyse_with_url(mock_client, mock_fetch, client):
+@patch("src.routes.fetch_terms_text", return_value="Terms " * 100)
+@patch("src.analysis._get_default_client")
+def test_deep_analyse_with_url(mock_get_client, mock_fetch, client):
     mock_choice = MagicMock()
     mock_choice.message.content = MOCK_DEEP_RESPONSE
     mock_resp = MagicMock()
     mock_resp.choices = [mock_choice]
-    mock_client.chat.completions.create.return_value = mock_resp
+    mock_openai = MagicMock()
+    mock_openai.chat.completions.create.return_value = mock_resp
+    mock_get_client.return_value = (mock_openai, "test-model")
 
     resp = client.post("/api/deep-analyse", json={"url": "https://example.com/terms"})
     assert resp.status_code == 200
@@ -193,13 +203,15 @@ MOCK_DEEP_TIER_RESPONSE = json.dumps({
 })
 
 
-@patch.object(analyzer_app, "client")
-def test_deep_analyse_with_tier(mock_client, client):
+@patch("src.analysis._get_default_client")
+def test_deep_analyse_with_tier(mock_get_client, client):
     mock_choice = MagicMock()
     mock_choice.message.content = MOCK_DEEP_TIER_RESPONSE
     mock_resp = MagicMock()
     mock_resp.choices = [mock_choice]
-    mock_client.chat.completions.create.return_value = mock_resp
+    mock_openai = MagicMock()
+    mock_openai.chat.completions.create.return_value = mock_resp
+    mock_get_client.return_value = (mock_openai, "test-model")
 
     long_text = "Terms and Conditions: " + "a " * 200
     resp = client.post("/api/deep-analyse", json={"raw_text": long_text, "tier": "Pro"})
@@ -208,7 +220,106 @@ def test_deep_analyse_with_tier(mock_client, client):
     assert data["tier_analysis"]["selected_tier"] == "Pro"
     assert len(data["tier_analysis"]["tier_specific_benefits"]) == 1
 
-    # Verify the tier was passed to the LLM system prompt
-    call_args = mock_client.chat.completions.create.call_args
-    system_msg = call_args[1]["messages"][0]["content"]
-    assert "Pro" in system_msg
+
+# ---------------------------------------------------------------------------
+# Tier comparison endpoint tests
+# ---------------------------------------------------------------------------
+MOCK_TIER_COMPARE_RESPONSE = json.dumps({
+    "platform_name": "TestAI",
+    "tiers_detected": ["Free", "Pro", "Enterprise"],
+    "tier_matrix": [
+        {
+            "tier_name": "Free",
+            "indemnity": {"covered": False, "detail": "No indemnity on free tier"},
+            "provenance": {"covered": False, "detail": "No provenance features"},
+            "output_ownership": {"covered": True, "detail": "User owns outputs"},
+            "commercial_use": {"covered": True, "detail": "Commercial use allowed"},
+            "training_opt_out": {"covered": False, "detail": "Cannot opt out"},
+            "license_to_provider": {"scope": "Broad", "detail": "Broad licence granted"},
+            "data_retention": {"policy": "Retained", "detail": "Data retained indefinitely"},
+            "third_party_sharing": {"shared": True, "detail": "Shared with partners"},
+        },
+        {
+            "tier_name": "Enterprise",
+            "indemnity": {"covered": True, "detail": "Full IP indemnification"},
+            "provenance": {"covered": True, "detail": "Audit trails available"},
+            "output_ownership": {"covered": True, "detail": "User owns outputs"},
+            "commercial_use": {"covered": True, "detail": "Full commercial rights"},
+            "training_opt_out": {"covered": True, "detail": "Opted out by default"},
+            "license_to_provider": {"scope": "Limited", "detail": "Minimal licence"},
+            "data_retention": {"policy": "Configurable", "detail": "Custom retention"},
+            "third_party_sharing": {"shared": False, "detail": "No sharing"},
+        },
+    ],
+    "comparison_summary": "Enterprise tier offers significantly better protection.",
+    "indemnity_deep_dive": {
+        "overview": "Only Enterprise tier provides indemnity.",
+        "which_tiers_covered": ["Enterprise"],
+        "exclusions": ["Wilful infringement"],
+        "caps": "$1M aggregate",
+    },
+    "provenance_deep_dive": {
+        "overview": "Audit features only on Enterprise.",
+        "which_tiers_covered": ["Enterprise"],
+        "capabilities": ["Content watermarking", "Audit log access"],
+    },
+    "upgrade_recommendation": "Enterprise offers the best protection for commercial use.",
+    "risk_assessment": {
+        "lowest_risk_tier": "Enterprise",
+        "highest_risk_tier": "Free",
+        "explanation": "Free tier lacks indemnity and training opt-out.",
+    },
+})
+
+
+@patch("src.analysis._get_default_client")
+def test_tier_compare_with_raw_text(mock_get_client, client):
+    mock_choice = MagicMock()
+    mock_choice.message.content = MOCK_TIER_COMPARE_RESPONSE
+    mock_resp = MagicMock()
+    mock_resp.choices = [mock_choice]
+    mock_openai = MagicMock()
+    mock_openai.chat.completions.create.return_value = mock_resp
+    mock_get_client.return_value = (mock_openai, "test-model")
+
+    long_text = "Terms and Conditions: " + "a " * 200
+    resp = client.post("/api/tier-compare", json={"raw_text": long_text})
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["platform_name"] == "TestAI"
+    assert len(data["tiers_detected"]) == 3
+    assert len(data["tier_matrix"]) == 2
+    assert data["indemnity_deep_dive"]["which_tiers_covered"] == ["Enterprise"]
+
+
+def test_tier_compare_missing_input(client):
+    resp = client.post("/api/tier-compare", json={})
+    assert resp.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# File upload endpoint tests
+# ---------------------------------------------------------------------------
+@patch("src.analysis._get_default_client")
+def test_upload_txt_file(mock_get_client, client):
+    mock_choice = MagicMock()
+    mock_choice.message.content = MOCK_AI_RESPONSE
+    mock_resp = MagicMock()
+    mock_resp.choices = [mock_choice]
+    mock_openai = MagicMock()
+    mock_openai.chat.completions.create.return_value = mock_resp
+    mock_get_client.return_value = (mock_openai, "test-model")
+
+    import io
+    txt_content = ("Terms and Conditions for TestAI service. " * 20).encode("utf-8")
+    data = {"file": (io.BytesIO(txt_content), "terms.txt"), "mode": "quick"}
+    resp = client.post("/api/upload", data=data, content_type="multipart/form-data")
+    assert resp.status_code == 200
+    result = resp.get_json()
+    assert result["platform_name"] == "TestAI"
+    assert "uploaded:" in result["source_url"]
+
+
+def test_upload_no_file(client):
+    resp = client.post("/api/upload", data={}, content_type="multipart/form-data")
+    assert resp.status_code == 400

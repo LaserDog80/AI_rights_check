@@ -1,0 +1,121 @@
+"""Text extraction from URLs, uploaded files, and raw text."""
+
+import io
+import re
+
+import requests
+from bs4 import BeautifulSoup
+
+HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0.0.0 Safari/537.36"
+    )
+}
+
+MAX_TEXT_LENGTH = 50_000
+
+
+def fetch_terms_text(url: str) -> str:
+    """Fetch a URL and extract the main text content."""
+    try:
+        import trafilatura
+
+        downloaded = trafilatura.fetch_url(url)
+        if downloaded:
+            text = trafilatura.extract(
+                downloaded, include_comments=False, include_tables=True
+            )
+            if text and len(text) > 200:
+                return text[:MAX_TEXT_LENGTH]
+    except Exception:
+        pass
+
+    # Fallback: requests + BeautifulSoup
+    resp = requests.get(url, headers=HEADERS, timeout=20)
+    resp.raise_for_status()
+    soup = BeautifulSoup(resp.text, "html.parser")
+
+    for tag in soup(["script", "style", "nav", "footer", "header", "aside"]):
+        tag.decompose()
+
+    text = soup.get_text(separator="\n", strip=True)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text[:MAX_TEXT_LENGTH]
+
+
+def extract_text_from_file(file_storage) -> str:
+    """Extract text from an uploaded file.
+
+    Supports PDF, DOCX, TXT, HTML, RTF, and falls back to raw text decode.
+    """
+    filename = (file_storage.filename or "").lower()
+    raw_bytes = file_storage.read()
+
+    if filename.endswith(".pdf"):
+        return _extract_pdf(raw_bytes)
+    elif filename.endswith(".docx"):
+        return _extract_docx(raw_bytes)
+    elif filename.endswith(".html") or filename.endswith(".htm"):
+        return _extract_html(raw_bytes)
+    elif filename.endswith(".rtf"):
+        return _extract_rtf(raw_bytes)
+    else:
+        # TXT and anything else — attempt raw text decode
+        return _extract_plain(raw_bytes)
+
+
+def _extract_pdf(raw_bytes: bytes) -> str:
+    """Extract text from a PDF file using pdfplumber."""
+    import pdfplumber
+
+    pages_text = []
+    with pdfplumber.open(io.BytesIO(raw_bytes)) as pdf:
+        for page in pdf.pages:
+            text = page.extract_text()
+            if text:
+                pages_text.append(text)
+    combined = "\n\n".join(pages_text)
+    return combined[:MAX_TEXT_LENGTH]
+
+
+def _extract_docx(raw_bytes: bytes) -> str:
+    """Extract text from a DOCX file using python-docx."""
+    import docx
+
+    doc = docx.Document(io.BytesIO(raw_bytes))
+    paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
+    combined = "\n\n".join(paragraphs)
+    return combined[:MAX_TEXT_LENGTH]
+
+
+def _extract_html(raw_bytes: bytes) -> str:
+    """Extract text from an HTML file using BeautifulSoup."""
+    text = raw_bytes.decode("utf-8", errors="replace")
+    soup = BeautifulSoup(text, "html.parser")
+    for tag in soup(["script", "style", "nav", "footer", "header", "aside"]):
+        tag.decompose()
+    plain = soup.get_text(separator="\n", strip=True)
+    plain = re.sub(r"\n{3,}", "\n\n", plain)
+    return plain[:MAX_TEXT_LENGTH]
+
+
+def _extract_rtf(raw_bytes: bytes) -> str:
+    """Extract text from an RTF file using striprtf."""
+    from striprtf.striprtf import rtf_to_text
+
+    rtf_content = raw_bytes.decode("utf-8", errors="replace")
+    text = rtf_to_text(rtf_content)
+    return text[:MAX_TEXT_LENGTH]
+
+
+def _extract_plain(raw_bytes: bytes) -> str:
+    """Decode raw bytes as plain text."""
+    for encoding in ("utf-8", "latin-1", "cp1252"):
+        try:
+            text = raw_bytes.decode(encoding)
+            return text[:MAX_TEXT_LENGTH]
+        except (UnicodeDecodeError, ValueError):
+            continue
+    return raw_bytes.decode("utf-8", errors="replace")[:MAX_TEXT_LENGTH]
