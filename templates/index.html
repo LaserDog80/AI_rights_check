@@ -135,10 +135,11 @@ textarea:focus{outline:none;border-color:var(--accent)}
 .rec-list li::before{content:'>';position:absolute;left:0;color:var(--accent2)}
 .mode-toggle{display:flex;gap:.5rem;margin-top:.75rem}
 .mode-btn{
-  flex:1;padding:.6rem;border:1px solid var(--border);border-radius:8px;
+  flex:1;padding:.6rem .6rem .4rem;border:1px solid var(--border);border-radius:8px;
   background:var(--surface2);color:var(--text2);font-size:.85rem;
   font-weight:600;cursor:pointer;text-align:center;transition:all .2s;
 }
+.mode-btn .mode-desc{display:block;font-size:.7rem;font-weight:400;margin-top:.2rem;opacity:.7}
 .mode-btn.active{border-color:var(--accent);color:var(--accent2);background:rgba(108,92,231,.1)}
 .mode-btn:hover{border-color:var(--accent)}
 .tier-select{margin-top:.75rem;display:flex;align-items:center}
@@ -270,7 +271,7 @@ footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.8rem}
         <label for="cfg-model">Model</label>
         <input type="text" id="cfg-model" placeholder="meta-llama/Meta-Llama-3.1-70B-Instruct" oninput="saveSettings()">
       </div>
-      <div class="settings-note">Optional — uses server default if not set. Required for AI-assisted crawl.</div>
+      <div class="settings-note">Required — powers the AI analysis engine. All three analysis modes use this API.</div>
     </div>
   </div>
 
@@ -284,7 +285,7 @@ footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.8rem}
     </div>
     <div class="crawl-option">
       <input type="checkbox" id="ai-crawl-check">
-      <label for="ai-crawl-check">AI-assisted deep crawl (discovers T&amp;Cs, privacy, pricing pages automatically)</label>
+      <label for="ai-crawl-check">Auto-discover related pages (follows links to find privacy policy, pricing, AUP, etc. on the same site)</label>
     </div>
 
     <div class="or-divider">— or paste the text directly —</div>
@@ -299,9 +300,9 @@ footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.8rem}
     </div>
 
     <div class="mode-toggle">
-      <button class="mode-btn active" id="mode-quick" onclick="setMode('quick')">Quick Analysis</button>
-      <button class="mode-btn" id="mode-deep" onclick="setMode('deep')">Deep Analysis</button>
-      <button class="mode-btn" id="mode-tier" onclick="setMode('tier-compare')">Tier Comparison</button>
+      <button class="mode-btn active" id="mode-quick" onclick="setMode('quick')">Summary<span class="mode-desc">Risk score, key findings &amp; checklist</span></button>
+      <button class="mode-btn" id="mode-deep" onclick="setMode('deep')">Clause-by-Clause<span class="mode-desc">Every clause decoded with risk levels</span></button>
+      <button class="mode-btn" id="mode-tier" onclick="setMode('tier-compare')">Compare Plans<span class="mode-desc">Side-by-side plan/tier differences</span></button>
     </div>
     <div class="tier-select" id="tier-select" style="display:none">
       <label for="tier-dropdown" style="font-size:.85rem;color:var(--text2);margin-right:.5rem">Pricing Tier:</label>
@@ -330,7 +331,7 @@ footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.8rem}
   <!-- Error -->
   <div class="error-msg" id="error-msg"></div>
 
-  <!-- Quick Analysis Results -->
+  <!-- Summary Results -->
   <div id="results">
     <div class="verdict-banner card">
       <h2>Platform</h2>
@@ -365,7 +366,7 @@ footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.8rem}
     </div>
   </div>
 
-  <!-- Deep Analysis Results -->
+  <!-- Clause-by-Clause Results -->
   <div id="deep-results">
     <div class="verdict-banner card">
       <h2>Platform</h2>
@@ -415,7 +416,7 @@ footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.8rem}
     </div>
   </div>
 
-  <!-- Tier Comparison Results -->
+  <!-- Compare Plans Results -->
   <div id="tier-results">
     <div class="verdict-banner card">
       <h2>Platform</h2>
@@ -423,7 +424,7 @@ footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.8rem}
       <div class="verdict-text" id="tr-summary"></div>
     </div>
     <div class="card">
-      <h3 style="margin-bottom:.5rem">Tier Comparison Matrix</h3>
+      <h3 style="margin-bottom:.5rem">Plan Comparison Matrix</h3>
       <p style="color:var(--text2);font-size:.85rem;margin-bottom:.5rem">Side-by-side comparison of what each tier offers.</p>
       <div class="tier-table-wrap" id="tr-matrix"></div>
     </div>
@@ -514,10 +515,10 @@ function setMode(mode) {
   const note = document.getElementById("mode-note");
   if (mode === "tier-compare") {
     note.style.display = "block";
-    note.textContent = "Auto-detects all pricing tiers and compares indemnity, provenance, ownership, and more.";
+    note.textContent = "Best used with pages that mention multiple pricing tiers. Compares indemnity, provenance, ownership, and more across plans.";
   } else if (mode === "deep") {
     note.style.display = "block";
-    note.textContent = "Clause-by-clause analysis with industry comparison and hidden concerns.";
+    note.textContent = "Analyses every significant clause with plain-english translations, risk ratings, and comparison to industry norms.";
   } else {
     note.style.display = "none";
   }
@@ -789,12 +790,12 @@ async function runAnalysis() {
   btn.disabled = true;
 
   const loaderTexts = {
-    "quick": "Fetching &amp; analysing terms... this takes 15-30 seconds.",
-    "deep": "Running deep clause-by-clause analysis... this may take 30-60 seconds.",
-    "tier-compare": "Analysing tier differences... this may take 30-60 seconds.",
+    "quick": "Fetching &amp; generating summary... this takes 15-30 seconds.",
+    "deep": "Running clause-by-clause analysis... this may take 30-60 seconds.",
+    "tier-compare": "Comparing plan differences... this may take 30-60 seconds.",
   };
   let lt = loaderTexts[analysisMode] || loaderTexts["quick"];
-  if (aiCrawl) lt = "AI-assisted crawl in progress... discovering and analysing multiple pages. This may take 1-2 minutes.";
+  if (aiCrawl) lt = "Discovering related pages and analysing... this may take 1-2 minutes.";
   document.getElementById("loader-text").innerHTML = lt;
 
   const cfg = getApiConfig();
