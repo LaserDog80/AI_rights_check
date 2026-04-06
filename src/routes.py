@@ -63,7 +63,10 @@ def api_analyse():
         terms_text, source, pages = _get_terms_text(data, api_config)
 
         if len(terms_text) < 100:
-            return jsonify({"error": "Could not extract enough text. Try pasting the T&Cs directly."}), 400
+            return jsonify({"error": (
+                "Could not extract enough text — the site may require JavaScript."
+                " Try pasting the T&Cs directly or uploading a saved copy of the page."
+            )}), 400
 
         result = analyse_terms(terms_text, **api_config)
         result["source_url"] = source
@@ -92,7 +95,10 @@ def api_deep_analyse():
         terms_text, source, pages = _get_terms_text(data, api_config)
 
         if len(terms_text) < 100:
-            return jsonify({"error": "Could not extract enough text. Try pasting the T&Cs directly."}), 400
+            return jsonify({"error": (
+                "Could not extract enough text — the site may require JavaScript."
+                " Try pasting the T&Cs directly or uploading a saved copy of the page."
+            )}), 400
 
         result = deep_analyse_terms(terms_text, tier=tier, **api_config)
         result["source_url"] = source
@@ -120,7 +126,10 @@ def api_tier_compare():
         terms_text, source, pages = _get_terms_text(data, api_config)
 
         if len(terms_text) < 100:
-            return jsonify({"error": "Could not extract enough text. Try pasting the T&Cs directly."}), 400
+            return jsonify({"error": (
+                "Could not extract enough text — the site may require JavaScript."
+                " Try pasting the T&Cs directly or uploading a saved copy of the page."
+            )}), 400
 
         result = tier_compare_terms(terms_text, **api_config)
         result["source_url"] = source

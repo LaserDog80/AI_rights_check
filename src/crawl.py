@@ -6,7 +6,7 @@ from urllib.parse import urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup
 
-from .extraction import HEADERS, MAX_TEXT_LENGTH, fetch_terms_text
+from .extraction import HEADERS, MAX_TEXT_LENGTH, _check_cloudflare, fetch_terms_text
 from .analysis import get_client
 
 MAX_PAGES = 8
@@ -124,8 +124,12 @@ def ai_crawl(url: str, api_key: str = "", base_url: str = "",
     _report("Fetching landing page...", 1, 4)
     try:
         resp = requests.get(url, headers=HEADERS, timeout=20)
+        _check_cloudflare(resp)
         resp.raise_for_status()
         landing_html = resp.text
+    except ValueError as e:
+        return {"combined_text": "", "pages_crawled": [], "page_count": 0,
+                "error": str(e)}
     except requests.RequestException as e:
         return {"combined_text": "", "pages_crawled": [], "page_count": 0,
                 "error": f"Failed to fetch landing page: {e}"}

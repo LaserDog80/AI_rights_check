@@ -16,6 +16,36 @@ HEADERS = {
 
 MAX_TEXT_LENGTH = 50_000
 
+PASTE_OR_UPLOAD_HINT = (
+    " Please copy and paste the Terms & Conditions text directly, or save the"
+    " page as a file (PDF, HTML, DOCX) and upload it instead."
+)
+
+CLOUDFLARE_MSG = (
+    "This site is protected by Cloudflare and cannot be fetched automatically."
+    + PASTE_OR_UPLOAD_HINT
+)
+
+JS_RENDERED_MSG = (
+    "This site requires JavaScript to display its content, so the text could"
+    " not be extracted automatically." + PASTE_OR_UPLOAD_HINT
+)
+
+
+def _check_cloudflare(resp) -> None:
+    """Raise ValueError if the response is a Cloudflare challenge page."""
+    if resp.status_code == 403 and (
+        "cf-mitigated" in resp.headers
+        or "Just a moment" in resp.text[:1000]
+    ):
+        raise ValueError(CLOUDFLARE_MSG)
+
+
+def _check_js_rendered(text: str) -> None:
+    """Raise ValueError if the extracted text is too short, likely JS-rendered."""
+    if len(text) < 100:
+        raise ValueError(JS_RENDERED_MSG)
+
 
 def fetch_terms_text(url: str) -> str:
     """Fetch a URL and extract the main text content."""
@@ -34,6 +64,7 @@ def fetch_terms_text(url: str) -> str:
 
     # Fallback: requests + BeautifulSoup
     resp = requests.get(url, headers=HEADERS, timeout=20)
+    _check_cloudflare(resp)
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "html.parser")
 
@@ -42,6 +73,7 @@ def fetch_terms_text(url: str) -> str:
 
     text = soup.get_text(separator="\n", strip=True)
     text = re.sub(r"\n{3,}", "\n\n", text)
+    _check_js_rendered(text)
     return text[:MAX_TEXT_LENGTH]
 
 
