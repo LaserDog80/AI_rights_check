@@ -73,7 +73,7 @@ class TestAiCrawl(unittest.TestCase):
         assert "combined_text" in result
         assert len(result["combined_text"]) > 0
 
-    @patch("src.crawl._fetch_with_playwright", side_effect=Exception("browser failed"))
+    @patch("src.crawl._fetch_html_with_playwright", side_effect=Exception("browser failed"))
     @patch("src.crawl.requests.get")
     def test_crawl_failure(self, mock_get, mock_pw):
         import requests

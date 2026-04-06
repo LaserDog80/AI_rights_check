@@ -47,8 +47,8 @@ def _check_js_rendered(text: str) -> None:
         raise ValueError(JS_RENDERED_MSG)
 
 
-def _fetch_with_playwright(url: str) -> str:
-    """Fetch a URL using a headless browser to bypass Cloudflare/JS rendering."""
+def _fetch_html_with_playwright(url: str) -> str:
+    """Fetch raw HTML from a URL using a headless browser."""
     from playwright.sync_api import sync_playwright
 
     with sync_playwright() as p:
@@ -68,16 +68,25 @@ def _fetch_with_playwright(url: str) -> str:
         try:
             page.goto(url, timeout=60000, wait_until="domcontentloaded")
             page.wait_for_timeout(10000)
-            html = page.content()
+            return page.content()
         finally:
             browser.close()
 
+
+def _extract_text_from_html(html: str) -> str:
+    """Extract clean text from raw HTML."""
     soup = BeautifulSoup(html, "html.parser")
     for tag in soup(["script", "style", "nav", "footer", "header", "aside"]):
         tag.decompose()
     text = soup.get_text(separator="\n", strip=True)
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text[:MAX_TEXT_LENGTH]
+
+
+def _fetch_with_playwright(url: str) -> str:
+    """Fetch a URL using a headless browser and return extracted text."""
+    html = _fetch_html_with_playwright(url)
+    return _extract_text_from_html(html)
 
 
 def fetch_terms_text(url: str) -> str:
