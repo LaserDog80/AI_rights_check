@@ -68,15 +68,15 @@ no code fences, pure JSON):
   "categories": {
     "training_on_user_content": {
       "status": "<Yes | No | Opt-out | Unclear>",
-      "detail": "<short explanation>"
+      "detail": "<short explanation — state clearly whether user content IS or IS NOT used for training>"
     },
     "ownership_of_outputs": {
       "status": "<User | Platform | Shared | Unclear>",
-      "detail": "<short explanation>"
+      "detail": "<short explanation — state who actually owns generated outputs>"
     },
     "enterprise_exclusions": {
       "status": "<Yes | No | Partial | Unclear>",
-      "detail": "<short explanation>"
+      "detail": "<short explanation — note any restrictions on enterprise/commercial users>"
     },
     "data_retention": {
       "status": "<Retained | Deleted | Configurable | Unclear>",
@@ -91,12 +91,12 @@ no code fences, pure JSON):
       "detail": "<short explanation>"
     },
     "liability_limitation": {
-      "status": "<Strong | Moderate | Weak | Unclear>",
-      "detail": "<short explanation>"
+      "status": "<Uncapped | Capped at fees paid | Heavily capped | Unclear>",
+      "detail": "<IMPORTANT: describe from the USER's perspective — e.g. 'Your ability to claim damages is capped at fees paid in the last 12 months' NOT 'Strong liability limitation'>"
     },
     "ip_indemnification": {
-      "status": "<Yes | No | Partial | Unclear>",
-      "detail": "<short explanation>"
+      "status": "<Platform indemnifies user | User indemnifies platform | Mutual | None | Unclear>",
+      "detail": "<IMPORTANT: state clearly WHO indemnifies WHOM — e.g. 'You must indemnify the platform against IP claims' or 'The platform indemnifies you against IP claims'>"
     }
   },
   "checklist": [
@@ -107,11 +107,19 @@ no code fences, pure JSON):
 }
 
 Rules:
+- IMPORTANT: The entire analysis is for the INDIVIDUAL USER, not the platform. All \
+  language must describe how the terms affect the person using the service. For example, \
+  "liability_limitation" should say "Your ability to claim damages is capped at ..." not \
+  "Strong liability limitation." "ip_indemnification" should say "You must indemnify the \
+  platform" not just "Yes."
 - checklist should have 6-10 items covering the most important rights & risks.
 - CRITICAL: Every checklist item MUST be phrased so that pass=true is FAVOURABLE for \
-  the user. For example, write "Is your content excluded from model training?" (pass=true \
-  means they DON'T train on it) rather than "Does the platform train on your content?" \
-  (where pass=true would confusingly mean they DO train on it).
+  the user. For example:
+  * "Is your content excluded from model training?" — pass=true means they DON'T train on it (good).
+  * "Do you retain full ownership without platform licences?" — pass=true means you do (good).
+  * "Are you protected from having to indemnify the platform?" — pass=true means you don't have to (good).
+  * "Is your maximum claim for damages uncapped?" — pass=true means uncapped (good).
+  NEVER phrase a checklist item where pass=true means something BAD for the user.
 - key_quotes: pick 2-4 of the most impactful verbatim sentences.
 - recommendations: 2-4 practical next-steps for the user.
 - If the text doesn't look like T&Cs, set classification to "Unclear" and explain in overall_verdict.

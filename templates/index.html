@@ -284,7 +284,7 @@ footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.8rem}
       </button>
     </div>
     <div class="crawl-option">
-      <input type="checkbox" id="ai-crawl-check">
+      <input type="checkbox" id="ai-crawl-check" checked>
       <label for="ai-crawl-check">Auto-discover related pages (follows links to find privacy policy, pricing, AUP, etc. on the same site)</label>
     </div>
 
@@ -531,22 +531,30 @@ const CATEGORY_LABELS = {
   data_retention: "Data Retention",
   third_party_sharing: "Third-Party Sharing",
   content_restrictions: "Content Restrictions",
-  liability_limitation: "Liability Limitation",
+  liability_limitation: "Your Liability Protection",
   ip_indemnification: "IP Indemnification",
 };
 
 function statusClass(category, status) {
-  const goodWhenYes = new Set(["enterprise_exclusions","ip_indemnification"]);
   const s = status.trim();
   if (s === "Unclear") return "s-neutral";
-  if (s === "Yes" && goodWhenYes.has(category)) return "s-good";
-  if (s === "No" && goodWhenYes.has(category)) return "s-bad";
   if (category === "training_on_user_content") { if (s === "No") return "s-good"; if (s === "Yes") return "s-bad"; return "s-warn"; }
   if (category === "ownership_of_outputs") { if (s === "User") return "s-good"; if (s === "Platform") return "s-bad"; return "s-warn"; }
+  if (category === "enterprise_exclusions") { if (s === "No") return "s-good"; if (s === "Yes" || s === "Partial") return "s-bad"; return "s-warn"; }
   if (category === "data_retention") { if (s === "Deleted" || s === "Configurable") return "s-good"; if (s === "Retained") return "s-bad"; return "s-warn"; }
   if (category === "third_party_sharing") { if (s === "No" || s === "Anonymised") return "s-good"; if (s === "Yes") return "s-bad"; return "s-warn"; }
   if (category === "content_restrictions") { if (s === "Minimal") return "s-good"; if (s === "Strict") return "s-bad"; return "s-warn"; }
-  if (category === "liability_limitation") { if (s === "Weak") return "s-good"; if (s === "Strong") return "s-bad"; return "s-warn"; }
+  if (category === "liability_limitation") {
+    if (s === "Uncapped") return "s-good";
+    if (s.toLowerCase().includes("capped") || s.toLowerCase().includes("fees")) return "s-bad";
+    return "s-warn";
+  }
+  if (category === "ip_indemnification") {
+    if (s.toLowerCase().includes("platform indemnifies")) return "s-good";
+    if (s.toLowerCase().includes("user indemnifies") || s === "None") return "s-bad";
+    if (s === "Mutual") return "s-warn";
+    return "s-neutral";
+  }
   return "s-neutral";
 }
 
