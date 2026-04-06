@@ -100,7 +100,7 @@ no code fences, pure JSON):
     }
   },
   "checklist": [
-    {"item": "<short checklist item>", "pass": <true|false|null>}
+    {"item": "<short checklist item, always phrased so YES = good for user>", "pass": <true|false|null>}
   ],
   "key_quotes": ["<relevant verbatim quote from T&Cs>", "..."],
   "recommendations": ["<actionable recommendation>", "..."]
@@ -108,7 +108,10 @@ no code fences, pure JSON):
 
 Rules:
 - checklist should have 6-10 items covering the most important rights & risks.
-- pass=true means favourable for the user, false means unfavourable, null means unclear.
+- CRITICAL: Every checklist item MUST be phrased so that pass=true is FAVOURABLE for \
+  the user. For example, write "Is your content excluded from model training?" (pass=true \
+  means they DON'T train on it) rather than "Does the platform train on your content?" \
+  (where pass=true would confusingly mean they DO train on it).
 - key_quotes: pick 2-4 of the most impactful verbatim sentences.
 - recommendations: 2-4 practical next-steps for the user.
 - If the text doesn't look like T&Cs, set classification to "Unclear" and explain in overall_verdict.
