@@ -458,6 +458,7 @@ function toggleSettings() {
   arrow.textContent = body.classList.contains("open") ? "\u25BC" : "\u25B6";
 }
 
+let _saveTimer = null;
 function saveSettings() {
   const cfg = {
     api_key: document.getElementById("cfg-api-key").value,
@@ -465,6 +466,16 @@ function saveSettings() {
     model: document.getElementById("cfg-model").value,
   };
   localStorage.setItem("ai_terms_config", JSON.stringify(cfg));
+
+  // Debounce — save to server .env after 1s of no typing
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(function() {
+    fetch("/api/save-config", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({api_key: cfg.api_key, api_base_url: cfg.base_url, api_model: cfg.model})
+    }).catch(function() {});
+  }, 1000);
 }
 
 function loadSettings() {

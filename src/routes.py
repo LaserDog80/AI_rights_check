@@ -1,9 +1,11 @@
 """Flask route handlers for the AI Terms Analyzer."""
 
 import json
+import os
 
 import requests
 from flask import Flask, jsonify, render_template, request
+from dotenv import load_dotenv, set_key
 
 from .extraction import fetch_terms_text, extract_text_from_file, MAX_TEXT_LENGTH
 from .analysis import analyse_terms, deep_analyse_terms, tier_compare_terms
@@ -146,6 +148,40 @@ def api_tier_compare():
         return jsonify({"error": str(e)}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/save-config", methods=["POST"])
+def api_save_config():
+    """Save API configuration to .env file."""
+    data = request.get_json(force=True)
+    env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+
+    # Create .env if it doesn't exist
+    if not os.path.exists(env_path):
+        with open(env_path, "w") as f:
+            f.write("")
+
+    api_key = data.get("api_key", "").strip()
+    base_url = data.get("api_base_url", "").strip()
+    model = data.get("api_model", "").strip()
+
+    if api_key:
+        set_key(env_path, "NEBIUS_API_KEY", api_key)
+    if base_url:
+        set_key(env_path, "NEBIUS_BASE_URL", base_url)
+    if model:
+        set_key(env_path, "NEBIUS_MODEL", model)
+
+    # Reload so the running server picks up changes
+    load_dotenv(env_path, override=True)
+
+    # Reset the cached default client so it picks up new values
+    from .analysis import _get_default_client
+    import src.analysis as _analysis
+    _analysis._default_client = None
+    _analysis._default_model = None
+
+    return jsonify({"status": "saved"})
 
 
 @app.route("/api/upload", methods=["POST"])
