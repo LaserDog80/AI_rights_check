@@ -6,7 +6,10 @@ from urllib.parse import urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup
 
-from .extraction import HEADERS, MAX_TEXT_LENGTH, _check_cloudflare, fetch_terms_text
+from .extraction import (
+    HEADERS, MAX_TEXT_LENGTH, PASTE_OR_UPLOAD_HINT,
+    _check_cloudflare, _fetch_with_playwright, fetch_terms_text,
+)
 from .analysis import get_client
 
 MAX_PAGES = 8
@@ -122,17 +125,29 @@ def ai_crawl(url: str, api_key: str = "", base_url: str = "",
 
     # Step 1: Fetch the landing page
     _report("Fetching landing page...", 1, 4)
+    landing_html = None
     try:
         resp = requests.get(url, headers=HEADERS, timeout=20)
         _check_cloudflare(resp)
         resp.raise_for_status()
         landing_html = resp.text
-    except ValueError as e:
-        return {"combined_text": "", "pages_crawled": [], "page_count": 0,
-                "error": str(e)}
-    except requests.RequestException as e:
-        return {"combined_text": "", "pages_crawled": [], "page_count": 0,
-                "error": f"Failed to fetch landing page: {e}"}
+    except (ValueError, requests.RequestException):
+        pass
+
+    if landing_html is None:
+        _report("Direct fetch failed, trying headless browser...", 1, 4)
+        try:
+            text = _fetch_with_playwright(url)
+            if len(text) < 100:
+                raise ValueError("Not enough content")
+            # Wrap the extracted text in basic HTML so link extraction still works
+            landing_html = f"<html><body>{text}</body></html>"
+        except Exception:
+            return {"combined_text": "", "pages_crawled": [], "page_count": 0,
+                    "error": (
+                        "Could not fetch the landing page, even with a headless"
+                        " browser." + PASTE_OR_UPLOAD_HINT
+                    )}
 
     # Step 2: Extract links and ask LLM which are relevant
     _report("Discovering relevant pages with AI...", 2, 4)

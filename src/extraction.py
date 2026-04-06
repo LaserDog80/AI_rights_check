@@ -47,8 +47,47 @@ def _check_js_rendered(text: str) -> None:
         raise ValueError(JS_RENDERED_MSG)
 
 
+def _fetch_with_playwright(url: str) -> str:
+    """Fetch a URL using a headless browser to bypass Cloudflare/JS rendering."""
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(
+            headless=True,
+            args=["--disable-blink-features=AutomationControlled"],
+        )
+        ctx = browser.new_context(
+            user_agent=(
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/124.0.0.0 Safari/537.36"
+            ),
+            viewport={"width": 1920, "height": 1080},
+        )
+        page = ctx.new_page()
+        try:
+            page.goto(url, timeout=60000, wait_until="domcontentloaded")
+            page.wait_for_timeout(10000)
+            html = page.content()
+        finally:
+            browser.close()
+
+    soup = BeautifulSoup(html, "html.parser")
+    for tag in soup(["script", "style", "nav", "footer", "header", "aside"]):
+        tag.decompose()
+    text = soup.get_text(separator="\n", strip=True)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text[:MAX_TEXT_LENGTH]
+
+
 def fetch_terms_text(url: str) -> str:
-    """Fetch a URL and extract the main text content."""
+    """Fetch a URL and extract the main text content.
+
+    Tries trafilatura first, then requests + BeautifulSoup, then falls back
+    to a headless browser (Playwright) for Cloudflare-protected or
+    JS-rendered sites.
+    """
+    # --- Attempt 1: trafilatura (fast, handles many sites) ---
     try:
         import trafilatura
 
@@ -62,19 +101,37 @@ def fetch_terms_text(url: str) -> str:
     except Exception:
         pass
 
-    # Fallback: requests + BeautifulSoup
-    resp = requests.get(url, headers=HEADERS, timeout=20)
-    _check_cloudflare(resp)
-    resp.raise_for_status()
-    soup = BeautifulSoup(resp.text, "html.parser")
+    # --- Attempt 2: requests + BeautifulSoup (fast fallback) ---
+    needs_browser = False
+    try:
+        resp = requests.get(url, headers=HEADERS, timeout=20)
+        _check_cloudflare(resp)
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, "html.parser")
 
-    for tag in soup(["script", "style", "nav", "footer", "header", "aside"]):
-        tag.decompose()
+        for tag in soup(["script", "style", "nav", "footer", "header", "aside"]):
+            tag.decompose()
 
-    text = soup.get_text(separator="\n", strip=True)
-    text = re.sub(r"\n{3,}", "\n\n", text)
-    _check_js_rendered(text)
-    return text[:MAX_TEXT_LENGTH]
+        text = soup.get_text(separator="\n", strip=True)
+        text = re.sub(r"\n{3,}", "\n\n", text)
+        if len(text) >= 100:
+            return text[:MAX_TEXT_LENGTH]
+        needs_browser = True
+    except ValueError:
+        needs_browser = True
+
+    # --- Attempt 3: headless browser (slow but handles Cloudflare/JS) ---
+    if needs_browser:
+        try:
+            text = _fetch_with_playwright(url)
+            if len(text) >= 100:
+                return text
+        except Exception:
+            pass
+        raise ValueError(
+            "Could not extract text from this site, even with a headless browser."
+            + PASTE_OR_UPLOAD_HINT
+        )
 
 
 def extract_text_from_file(file_storage) -> str:
