@@ -284,7 +284,7 @@ footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.8rem}
       </button>
     </div>
     <div class="crawl-option">
-      <input type="checkbox" id="ai-crawl-check" checked>
+      <input type="checkbox" id="ai-crawl-check">
       <label for="ai-crawl-check">Auto-discover related pages (follows links to find privacy policy, pricing, AUP, etc. on the same site)</label>
     </div>
 
@@ -587,7 +587,7 @@ function renderResults(data) {
   const cl = document.getElementById("r-checklist");
   cl.innerHTML = "";
   (data.checklist || []).forEach(function(item) {
-    const icon = item.pass === true ? "PASS" : item.pass === false ? "FAIL" : "?";
+    const icon = item.pass === true ? "\u2714" : item.pass === false ? "\u2718" : "?";
     const iconCls = item.pass === true ? "s-good" : item.pass === false ? "s-bad" : "s-neutral";
     cl.innerHTML += '<li><span class="check-icon ' + iconCls + '">' + icon + '</span>' + esc(item.item) + '</li>';
   });
