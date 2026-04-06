@@ -126,9 +126,11 @@ textarea:focus{outline:none;border-color:var(--accent)}
 .cat-card .detail{font-size:.85rem;color:var(--text2);line-height:1.45}
 .s-good{color:var(--green)}.s-bad{color:var(--red)}.s-warn{color:var(--amber)}.s-neutral{color:var(--text2)}
 .checklist{list-style:none;margin-top:.75rem}
-.checklist li{padding:.6rem .75rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.6rem;font-size:.92rem}
+.checklist li{padding:.6rem .75rem;border-bottom:1px solid var(--border);font-size:.92rem}
 .checklist li:last-child{border-bottom:none}
+.check-row{display:flex;align-items:center;gap:.6rem}
 .check-icon{font-size:1.1rem;flex-shrink:0}
+.check-quote{margin:.4rem 0 .2rem 1.7rem;padding:.4rem .75rem;border-left:2px solid var(--border);font-size:.78rem;color:var(--text2);font-style:italic;line-height:1.5}
 .quote{border-left:3px solid var(--accent);padding:.5rem 1rem;margin:.5rem 0;color:var(--text2);font-style:italic;font-size:.9rem;background:var(--surface2);border-radius:0 8px 8px 0}
 .rec-list{list-style:none;margin-top:.5rem}
 .rec-list li{padding:.4rem 0;padding-left:1.2rem;position:relative;font-size:.92rem;color:var(--text)}
@@ -353,12 +355,8 @@ footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.8rem}
       <div class="cat-grid" id="r-categories"></div>
     </div>
     <div class="card">
-      <h3>Quick Checklist</h3>
+      <h3>Rights Checklist</h3>
       <ul class="checklist" id="r-checklist"></ul>
-    </div>
-    <div class="card">
-      <h3 style="margin-bottom:.75rem">Key Quotes from T&amp;Cs</h3>
-      <div id="r-quotes"></div>
     </div>
     <div class="card">
       <h3 style="margin-bottom:.5rem">Recommendations</h3>
@@ -589,11 +587,13 @@ function renderResults(data) {
   (data.checklist || []).forEach(function(item) {
     const icon = item.pass === true ? "\u2714" : item.pass === false ? "\u2718" : "?";
     const iconCls = item.pass === true ? "s-good" : item.pass === false ? "s-bad" : "s-neutral";
-    cl.innerHTML += '<li><span class="check-icon ' + iconCls + '">' + icon + '</span>' + esc(item.item) + '</li>';
+    let html = '<li><div class="check-row"><span class="check-icon ' + iconCls + '">' + icon + '</span>' + esc(item.item) + '</div>';
+    if (item.quote) {
+      html += '<div class="check-quote">"' + esc(item.quote) + '"</div>';
+    }
+    html += '</li>';
+    cl.innerHTML += html;
   });
-  const qd = document.getElementById("r-quotes");
-  qd.innerHTML = "";
-  (data.key_quotes || []).forEach(function(q) { qd.innerHTML += '<div class="quote">"' + esc(q) + '"</div>'; });
   const rl = document.getElementById("r-recs");
   rl.innerHTML = "";
   (data.recommendations || []).forEach(function(r) { rl.innerHTML += '<li>' + esc(r) + '</li>'; });

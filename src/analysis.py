@@ -100,9 +100,13 @@ no code fences, pure JSON):
     }
   },
   "checklist": [
-    {"item": "<short checklist item, always phrased so YES = good for user>", "pass": <true|false|null>}
+    {
+      "id": "<one of the fixed IDs listed below>",
+      "item": "<the fixed question text>",
+      "pass": <true|false|null>,
+      "quote": "<verbatim excerpt from the T&Cs that supports this assessment, or empty string if not addressed>"
+    }
   ],
-  "key_quotes": ["<relevant verbatim quote from T&Cs>", "..."],
   "recommendations": ["<actionable recommendation>", "..."]
 }
 
@@ -112,15 +116,19 @@ Rules:
   "liability_limitation" should say "Your ability to claim damages is capped at ..." not \
   "Strong liability limitation." "ip_indemnification" should say "You must indemnify the \
   platform" not just "Yes."
-- checklist should have 6-10 items covering the most important rights & risks.
-- CRITICAL: Every checklist item MUST be phrased so that pass=true is FAVOURABLE for \
-  the user. For example:
-  * "Is your content excluded from model training?" — pass=true means they DON'T train on it (good).
-  * "Do you retain full ownership without platform licences?" — pass=true means you do (good).
-  * "Are you protected from having to indemnify the platform?" — pass=true means you don't have to (good).
-  * "Is your maximum claim for damages uncapped?" — pass=true means uncapped (good).
-  NEVER phrase a checklist item where pass=true means something BAD for the user.
-- key_quotes: pick 2-4 of the most impactful verbatim sentences.
+- checklist: You MUST use EXACTLY these 10 fixed items, in this order, with these exact \
+  IDs and question texts. Assess each one as pass (true = good for user), fail (false = \
+  bad for user), or unclear (null). Include a verbatim quote from the T&Cs for each:
+  1. id: "training_optout", item: "Is your content excluded from AI/model training?"
+  2. id: "full_ownership", item: "Do you retain full ownership of outputs without platform licences?"
+  3. id: "no_indemnify", item: "Are you protected from having to indemnify the platform?"
+  4. id: "fair_liability", item: "Can you claim meaningful damages if something goes wrong?"
+  5. id: "data_deletion", item: "Can you delete your data and content on demand?"
+  6. id: "no_third_party", item: "Is your data protected from third-party sharing?"
+  7. id: "no_unilateral", item: "Is the platform prevented from changing terms without notice?"
+  8. id: "content_portable", item: "Can you export or take your content with you if you leave?"
+  9. id: "dispute_fair", item: "Do you have fair legal recourse (not forced arbitration)?"
+  10. id: "commercial_clear", item: "Are commercial use rights clearly granted?"
 - recommendations: 2-4 practical next-steps for the user.
 - If the text doesn't look like T&Cs, set classification to "Unclear" and explain in overall_verdict.
 """
