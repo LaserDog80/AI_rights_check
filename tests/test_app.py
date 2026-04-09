@@ -323,3 +323,100 @@ def test_upload_txt_file(mock_get_client, client):
 def test_upload_no_file(client):
     resp = client.post("/api/upload", data={}, content_type="multipart/form-data")
     assert resp.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# Known-sites endpoint
+# ---------------------------------------------------------------------------
+def test_known_sites_endpoint(client):
+    resp = client.get("/api/known-sites")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert "sites" in data
+    assert "firecrawl_enabled" in data
+    slugs = [s["slug"] for s in data["sites"]]
+    # Spot-check a few of the user-requested platforms
+    for slug in ["midjourney", "runway", "freepik", "fal", "heygen"]:
+        assert slug in slugs
+
+
+@patch("src.crawl.firecrawl_client.is_enabled", return_value=False)
+@patch("src.crawl.fetch_terms_text", return_value="Curated terms text " * 200)
+@patch("src.analysis._get_default_client")
+def test_analyse_with_known_site(mock_get_client, mock_fetch, mock_fc_enabled, client):
+    """Picking a known-site slug routes through known_site_crawl."""
+    mock_choice = MagicMock()
+    mock_choice.message.content = MOCK_AI_RESPONSE
+    mock_resp = MagicMock()
+    mock_resp.choices = [mock_choice]
+    mock_openai = MagicMock()
+    mock_openai.chat.completions.create.return_value = mock_resp
+    mock_get_client.return_value = (mock_openai, "test-model")
+
+    resp = client.post("/api/analyse", json={"known_site": "midjourney"})
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["source_url"] == "Midjourney"
+    assert "known_site" in data
+    assert data["known_site"]["name"] == "Midjourney"
+    assert data["known_site"]["is_aggregator"] is False
+
+
+@patch("src.crawl.firecrawl_client.is_enabled", return_value=False)
+@patch("src.crawl.fetch_terms_text", return_value="Aggregator policy text " * 200)
+@patch("src.analysis._get_default_client")
+def test_analyse_with_aggregator_known_site(mock_get_client, mock_fetch, mock_fc_enabled, client):
+    """Aggregators surface stacked-terms metadata in the response."""
+    mock_choice = MagicMock()
+    mock_choice.message.content = MOCK_AI_RESPONSE
+    mock_resp = MagicMock()
+    mock_resp.choices = [mock_choice]
+    mock_openai = MagicMock()
+    mock_openai.chat.completions.create.return_value = mock_resp
+    mock_get_client.return_value = (mock_openai, "test-model")
+
+    resp = client.post("/api/analyse", json={"known_site": "freepik"})
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["known_site"]["is_aggregator"] is True
+    assert data["known_site"]["stacked_terms_note"]
+    assert "Flux" in data["known_site"]["underlying_models"]
+
+
+def test_analyse_with_unknown_site_slug(client):
+    resp = client.post("/api/analyse", json={"known_site": "totally_made_up"})
+    assert resp.status_code == 400
+    data = resp.get_json()
+    assert "error" in data
+
+
+@patch("src.routes.firecrawl_discovery_crawl")
+@patch("src.analysis._get_default_client")
+def test_analyse_with_deep_discovery(mock_get_client, mock_discovery, client):
+    """deep_discovery=True routes through firecrawl_discovery_crawl."""
+    mock_discovery.return_value = {
+        "combined_text": "Discovered policy text " * 200,
+        "pages_crawled": [
+            {"url": "https://newsite.com/terms", "type": "policy/terms page"},
+            {"url": "https://newsite.com/privacy", "type": "policy/terms page"},
+        ],
+        "discovery_method": "firecrawl_map",
+        "candidates_found": 5,
+    }
+    mock_choice = MagicMock()
+    mock_choice.message.content = MOCK_AI_RESPONSE
+    mock_resp = MagicMock()
+    mock_resp.choices = [mock_choice]
+    mock_openai = MagicMock()
+    mock_openai.chat.completions.create.return_value = mock_resp
+    mock_get_client.return_value = (mock_openai, "test-model")
+
+    resp = client.post("/api/analyse", json={
+        "url": "https://newsite.com",
+        "deep_discovery": True,
+    })
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["discovery_method"] == "firecrawl_map"
+    assert data["candidates_found"] == 5
+    mock_discovery.assert_called_once()

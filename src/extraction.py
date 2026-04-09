@@ -92,10 +92,21 @@ def _fetch_with_playwright(url: str) -> str:
 def fetch_terms_text(url: str) -> str:
     """Fetch a URL and extract the main text content.
 
-    Tries trafilatura first, then requests + BeautifulSoup, then falls back
-    to a headless browser (Playwright) for Cloudflare-protected or
-    JS-rendered sites.
+    Tries Firecrawl first (when configured) for clean markdown output, then
+    falls back to trafilatura, then requests + BeautifulSoup, then a headless
+    browser (Playwright) for Cloudflare-protected or JS-rendered sites.
     """
+    # --- Attempt 0: Firecrawl (clean markdown, handles JS + Cloudflare) ---
+    try:
+        from . import firecrawl_client
+
+        if firecrawl_client.is_enabled():
+            markdown = firecrawl_client.scrape_url(url)
+            if markdown and len(markdown) > 200:
+                return markdown[:MAX_TEXT_LENGTH]
+    except Exception:
+        pass
+
     # --- Attempt 1: trafilatura (fast, handles many sites) ---
     try:
         import trafilatura

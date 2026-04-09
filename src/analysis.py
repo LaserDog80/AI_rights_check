@@ -54,8 +54,18 @@ def _parse_llm_json(raw: str) -> dict:
 # Quick analysis
 # ---------------------------------------------------------------------------
 SYSTEM_PROMPT = """\
-You are an expert AI-policy analyst. The user will give you the Terms & Conditions \
-(or Terms of Service / Acceptable Use Policy) text from a generative-AI platform.
+You are an expert AI-policy analyst specialising in IMAGE and VIDEO generation \
+platforms. The user will give you the Terms & Conditions (or Terms of Service / \
+Acceptable Use Policy) text from a generative-AI image or video service.
+
+Image/video-gen T&Cs have unique high-stakes provisions you MUST examine carefully:
+- Commercial-use rights and how they vary across pricing tiers
+- IP indemnity (does the provider defend the user against copyright claims?)
+- Likeness and identity rights (real-people, deepfakes, public figures)
+- Output watermarking, content provenance, and C2PA metadata
+- Input/reference image rights (what happens to photos the user uploads as refs)
+- Training rights on the user's prompts AND on the user's output images
+- Tier-specific exclusions (free tiers often surrender far more rights)
 
 Analyse the text and return a JSON object with EXACTLY this schema (no markdown, \
 no code fences, pure JSON):
@@ -68,15 +78,35 @@ no code fences, pure JSON):
   "categories": {
     "training_on_user_content": {
       "status": "<Yes | No | Opt-out | Unclear>",
-      "detail": "<short explanation — state clearly whether user content IS or IS NOT used for training>"
+      "detail": "<short explanation — state clearly whether user prompts AND generated images/videos ARE or ARE NOT used for training>"
     },
     "ownership_of_outputs": {
       "status": "<User | Platform | Shared | Unclear>",
-      "detail": "<short explanation — state who actually owns generated outputs>"
+      "detail": "<short explanation — state who actually owns generated images/videos>"
+    },
+    "commercial_use_rights": {
+      "status": "<Allowed | Restricted | Tier-dependent | None | Unclear>",
+      "detail": "<IMPORTANT: state clearly whether the user can use generated images/videos commercially, and whether this depends on pricing tier (e.g. 'Midjourney: free tier prohibits all commercial use; paid tiers allow it')>"
+    },
+    "ip_indemnification": {
+      "status": "<Platform indemnifies user | User indemnifies platform | Mutual | None | Unclear>",
+      "detail": "<IMPORTANT: state clearly WHO indemnifies WHOM. For image/video gen this is the highest-stakes clause — does the provider defend the user if Disney/Getty sues? Adobe Firefly is the notable exception that does indemnify.>"
+    },
+    "likeness_and_identity": {
+      "status": "<Allowed | Restricted | Prohibited | Unclear>",
+      "detail": "<can the user generate real people, public figures, or recognisable likenesses? Who is liable if a deepfake claim is made?>"
+    },
+    "input_image_rights": {
+      "status": "<User retains | Licensed to platform | Broad license | Unclear>",
+      "detail": "<what rights does the platform claim over reference images, source photos, or other media the user uploads?>"
+    },
+    "model_provenance": {
+      "status": "<Watermarked | C2PA tagged | None | Configurable | Unclear>",
+      "detail": "<are outputs watermarked, fingerprinted, or tagged with content provenance metadata that could be used to trace them back?>"
     },
     "enterprise_exclusions": {
       "status": "<Yes | No | Partial | Unclear>",
-      "detail": "<short explanation — note any restrictions on enterprise/commercial users>"
+      "detail": "<short explanation — note any tier-specific carve-outs (e.g. 'Enterprise tier excluded from training', 'Free tier loses commercial rights')>"
     },
     "data_retention": {
       "status": "<Retained | Deleted | Configurable | Unclear>",
@@ -88,15 +118,11 @@ no code fences, pure JSON):
     },
     "content_restrictions": {
       "status": "<Strict | Moderate | Minimal | Unclear>",
-      "detail": "<short explanation>"
+      "detail": "<short explanation — NSFW rules, copyright restrictions, prohibited subjects>"
     },
     "liability_limitation": {
       "status": "<Uncapped | Capped at fees paid | Heavily capped | Unclear>",
       "detail": "<IMPORTANT: describe from the USER's perspective — e.g. 'Your ability to claim damages is capped at fees paid in the last 12 months' NOT 'Strong liability limitation'>"
-    },
-    "ip_indemnification": {
-      "status": "<Platform indemnifies user | User indemnifies platform | Mutual | None | Unclear>",
-      "detail": "<IMPORTANT: state clearly WHO indemnifies WHOM — e.g. 'You must indemnify the platform against IP claims' or 'The platform indemnifies you against IP claims'>"
     }
   },
   "checklist": [
@@ -145,7 +171,7 @@ def analyse_terms(terms_text: str, api_key: str = "", base_url: str = "",
             {"role": "user", "content": terms_text},
         ],
         temperature=0.2,
-        max_tokens=3000,
+        max_tokens=4500,
     )
     return _parse_llm_json(response.choices[0].message.content)
 
@@ -154,9 +180,19 @@ def analyse_terms(terms_text: str, api_key: str = "", base_url: str = "",
 # Deep analysis
 # ---------------------------------------------------------------------------
 DEEP_SYSTEM_PROMPT = """\
-You are a senior AI-policy lawyer and technical analyst. The user will give you \
-the Terms & Conditions (or Terms of Service / Acceptable Use Policy) text from a \
-generative-AI platform.
+You are a senior AI-policy lawyer and technical analyst specialising in IMAGE \
+and VIDEO generation platforms. The user will give you the Terms & Conditions \
+(or Terms of Service / Acceptable Use Policy) text from a generative-AI image \
+or video service.
+
+You MUST pay special attention to clauses covering:
+- Output ownership, commercial-use rights, and how they vary by pricing tier
+- IP indemnification (does the provider defend the user against copyright claims?)
+- Likeness, identity, and deepfake provisions
+- Watermarking, content provenance (C2PA), and traceability
+- Rights claimed over input/reference images uploaded by the user
+- Training on user prompts AND on user-generated images/videos
+- Tier-specific carve-outs and revocation of previously-granted rights
 
 Perform a deep, clause-by-clause analysis. Return a JSON object with EXACTLY this \
 schema (no markdown, no code fences, pure JSON):
@@ -207,9 +243,12 @@ schema (no markdown, no code fences, pure JSON):
 Rules:
 - Analyse EVERY significant clause, not just the obvious ones. Aim for 8-20 clauses.
 - hidden_concerns should surface provisions that are easily overlooked but materially \
-  affect users (buried in dense paragraphs, vague language, unilateral change rights, etc.).
-- comparison_to_industry should compare against norms from OpenAI, Google, Microsoft, \
-  Anthropic, Meta, and Stability AI terms as of 2025.
+  affect users (buried in dense paragraphs, vague language, unilateral change rights, \
+  silent revocation of commercial rights on tier downgrade, etc.).
+- comparison_to_industry should compare against norms from Midjourney, Runway, Pika, \
+  Adobe Firefly, OpenAI Sora, Google Veo/Imagen, Kling, Leonardo, Ideogram, and Stability \
+  AI terms as of 2025. Adobe Firefly is the canonical example of a provider that DOES \
+  offer IP indemnity; flag any platform that matches or fails to match this benchmark.
 - Be precise with verbatim quotes — copy exact wording from the text.
 - If the text doesn't look like T&Cs, return minimal results with classification "Unclear".
 """

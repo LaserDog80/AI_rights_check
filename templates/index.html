@@ -274,16 +274,33 @@ footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.8rem}
         <input type="text" id="cfg-model" placeholder="meta-llama/Meta-Llama-3.1-70B-Instruct" oninput="saveSettings()">
       </div>
       <div class="settings-note">Required — powers the AI analysis engine. All three analysis modes use this API.</div>
+      <div class="field" style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)">
+        <label for="cfg-firecrawl-key">Firecrawl API Key <span style="color:var(--text2);font-weight:400">(optional)</span></label>
+        <input type="password" id="cfg-firecrawl-key" placeholder="fc-..." oninput="saveFirecrawlKey()">
+        <div class="settings-note" id="fc-status">Enables clean markdown extraction, parallel scraping, and the "Other (deep discovery)" path for unknown sites.</div>
+      </div>
     </div>
   </div>
 
   <!-- Input -->
   <div class="card" id="input-card">
+    <div class="tier-select" style="margin-bottom:.75rem;display:flex">
+      <label for="known-site-dropdown" style="font-size:.85rem;color:var(--text2);margin-right:.5rem;align-self:center">Platform:</label>
+      <select id="known-site-dropdown" onchange="onKnownSiteChange()">
+        <option value="">-- Select an image/video platform... --</option>
+        <option value="__other__">Other (paste URL below)</option>
+      </select>
+    </div>
+    <div id="known-site-info" style="display:none;padding:.6rem .8rem;margin-bottom:.75rem;background:rgba(108,92,231,.06);border:1px solid rgba(108,92,231,.2);border-radius:8px;font-size:.82rem;color:var(--text2);line-height:1.45"></div>
     <div class="input-group">
-      <input type="text" id="url-input" placeholder="Paste a T&amp;Cs / ToS URL (e.g. https://openai.com/policies/terms-of-use)">
+      <input type="text" id="url-input" placeholder="Paste a T&amp;Cs / ToS URL (e.g. https://midjourney.com/legal/terms-of-service)">
       <button class="btn btn-primary" id="analyse-btn" onclick="runAnalysis()">
         <span id="btn-label">Analyse</span>
       </button>
+    </div>
+    <div class="crawl-option">
+      <input type="checkbox" id="deep-discovery-check">
+      <label for="deep-discovery-check">Deep discovery (uses Firecrawl /map to find every legal page on the domain — best for unknown sites)</label>
     </div>
     <div class="crawl-option">
       <input type="checkbox" id="ai-crawl-check">
@@ -449,6 +466,7 @@ footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.8rem}
 <script>
 let analysisMode = "quick";
 let selectedFile = null;
+let knownSitesCache = [];
 
 // Settings
 function toggleSettings() {
@@ -484,7 +502,119 @@ function loadSettings() {
     if (cfg.api_key) document.getElementById("cfg-api-key").value = cfg.api_key;
     if (cfg.base_url) document.getElementById("cfg-base-url").value = cfg.base_url;
     if (cfg.model) document.getElementById("cfg-model").value = cfg.model;
+    const fcKey = localStorage.getItem("ai_terms_firecrawl_key") || "";
+    if (fcKey) document.getElementById("cfg-firecrawl-key").value = fcKey;
   } catch (e) {}
+}
+
+let _fcSaveTimer = null;
+function saveFirecrawlKey() {
+  const key = document.getElementById("cfg-firecrawl-key").value;
+  localStorage.setItem("ai_terms_firecrawl_key", key);
+  clearTimeout(_fcSaveTimer);
+  _fcSaveTimer = setTimeout(function() {
+    fetch("/api/save-firecrawl-key", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({firecrawl_api_key: key}),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      const status = document.getElementById("fc-status");
+      if (data.enabled) {
+        status.textContent = "Firecrawl enabled — clean markdown extraction and deep discovery active.";
+        status.style.color = "var(--green)";
+      } else {
+        status.textContent = "Enables clean markdown extraction, parallel scraping, and the \"Other (deep discovery)\" path for unknown sites.";
+        status.style.color = "";
+      }
+    })
+    .catch(function() {});
+  }, 1000);
+}
+
+const CATEGORY_GROUP_LABELS = {
+  direct: "Direct image/video generators",
+  aggregator: "Aggregators (terms stack)",
+  avatar: "Avatar / character video",
+};
+
+function loadKnownSites() {
+  fetch("/api/known-sites")
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      knownSitesCache = data.sites || [];
+      const dd = document.getElementById("known-site-dropdown");
+      // Wipe everything except the first two static options
+      while (dd.options.length > 2) dd.remove(2);
+
+      // Group by category
+      const groups = {};
+      knownSitesCache.forEach(function(s) {
+        if (!groups[s.category]) groups[s.category] = [];
+        groups[s.category].push(s);
+      });
+      ["direct", "aggregator", "avatar"].forEach(function(cat) {
+        if (!groups[cat]) return;
+        const og = document.createElement("optgroup");
+        og.label = CATEGORY_GROUP_LABELS[cat] || cat;
+        groups[cat].forEach(function(s) {
+          const opt = document.createElement("option");
+          opt.value = s.slug;
+          opt.textContent = s.name + (s.is_aggregator ? "  (stacked terms)" : "");
+          og.appendChild(opt);
+        });
+        dd.appendChild(og);
+      });
+
+      // Surface Firecrawl status in the settings note
+      if (data.firecrawl_enabled) {
+        const status = document.getElementById("fc-status");
+        if (status) {
+          status.textContent = "Firecrawl enabled — clean markdown extraction and deep discovery active.";
+          status.style.color = "var(--green)";
+        }
+      }
+    })
+    .catch(function() {});
+}
+
+function onKnownSiteChange() {
+  const dd = document.getElementById("known-site-dropdown");
+  const slug = dd.value;
+  const info = document.getElementById("known-site-info");
+  const urlInput = document.getElementById("url-input");
+  const deepCheck = document.getElementById("deep-discovery-check");
+
+  if (!slug || slug === "__other__") {
+    info.style.display = "none";
+    urlInput.disabled = false;
+    if (slug === "__other__") {
+      urlInput.placeholder = "Paste a T&Cs / ToS URL — we'll deep-discover related policy pages";
+      deepCheck.checked = true;
+    } else {
+      urlInput.placeholder = "Paste a T&Cs / ToS URL (e.g. https://midjourney.com/legal/terms-of-service)";
+    }
+    return;
+  }
+
+  // Known site selected — disable URL input, show info banner
+  const site = knownSitesCache.find(function(s) { return s.slug === slug; });
+  if (!site) return;
+
+  urlInput.disabled = true;
+  urlInput.value = "";
+  deepCheck.checked = false;
+
+  let html = '<strong style="color:var(--accent2)">' + esc(site.name) + '</strong>';
+  if (site.tiers && site.tiers.length) {
+    html += '<br><span style="font-size:.78rem">Tiers: ' + site.tiers.map(esc).join(" · ") + '</span>';
+  }
+  if (site.is_aggregator) {
+    html += '<br><span style="color:var(--amber);font-size:.78rem">&#9888; Aggregator — both this platform\'s terms and the underlying model\'s terms apply.</span>';
+  }
+  info.innerHTML = html;
+  info.style.display = "block";
 }
 
 function getApiConfig() {
@@ -536,12 +666,16 @@ function setMode(mode) {
 const CATEGORY_LABELS = {
   training_on_user_content: "Training on Your Content",
   ownership_of_outputs: "Ownership of Outputs",
-  enterprise_exclusions: "Enterprise Exclusions",
+  commercial_use_rights: "Commercial Use Rights",
+  ip_indemnification: "IP Indemnification",
+  likeness_and_identity: "Likeness & Identity Rights",
+  input_image_rights: "Reference Image Rights",
+  model_provenance: "Watermarking & Provenance",
+  enterprise_exclusions: "Tier Exclusions",
   data_retention: "Data Retention",
   third_party_sharing: "Third-Party Sharing",
   content_restrictions: "Content Restrictions",
   liability_limitation: "Your Liability Protection",
-  ip_indemnification: "IP Indemnification",
 };
 
 function statusClass(category, status) {
@@ -564,6 +698,30 @@ function statusClass(category, status) {
     if (s === "Mutual") return "s-warn";
     return "s-neutral";
   }
+  if (category === "commercial_use_rights") {
+    if (s === "Allowed") return "s-good";
+    if (s === "None" || s === "Restricted") return "s-bad";
+    if (s === "Tier-dependent") return "s-warn";
+    return "s-neutral";
+  }
+  if (category === "likeness_and_identity") {
+    if (s === "Allowed") return "s-good";
+    if (s === "Prohibited") return "s-bad";
+    if (s === "Restricted") return "s-warn";
+    return "s-neutral";
+  }
+  if (category === "input_image_rights") {
+    if (s === "User retains") return "s-good";
+    if (s === "Broad license") return "s-bad";
+    if (s === "Licensed to platform") return "s-warn";
+    return "s-neutral";
+  }
+  if (category === "model_provenance") {
+    if (s === "None") return "s-good";
+    if (s === "Watermarked" || s === "C2PA tagged") return "s-warn";
+    if (s === "Configurable") return "s-good";
+    return "s-neutral";
+  }
   return "s-neutral";
 }
 
@@ -582,6 +740,21 @@ function renderResults(data) {
   badge.textContent = data.classification || "Unclear";
   badge.className = "badge " + classificationBadge(data.classification);
   document.getElementById("r-source").textContent = data.source_url ? "Source: " + data.source_url : "";
+  // Aggregator stacked-terms warning (if applicable)
+  const resultsEl = document.getElementById("results");
+  // Remove any previous banner from a prior run
+  Array.from(resultsEl.parentNode.querySelectorAll(".aggregator-banner")).forEach(function(b) { b.remove(); });
+  if (data.known_site && data.known_site.is_aggregator && data.known_site.stacked_terms_note) {
+    const banner = document.createElement("div");
+    banner.className = "aggregator-banner";
+    banner.style.cssText = "padding:.75rem 1rem;margin-bottom:1rem;background:rgba(255,171,64,.08);border:1px solid rgba(255,171,64,.3);border-radius:8px;font-size:.85rem;color:var(--text)";
+    let html = '<strong style="color:var(--amber)">&#9888; Stacked terms warning:</strong> ' + esc(data.known_site.stacked_terms_note);
+    if (data.known_site.underlying_models && data.known_site.underlying_models.length) {
+      html += '<br><span style="font-size:.78rem;color:var(--text2)">Underlying models: ' + data.known_site.underlying_models.map(esc).join(", ") + '</span>';
+    }
+    banner.innerHTML = html;
+    resultsEl.insertBefore(banner, resultsEl.firstChild);
+  }
   const risk = data.risk_score || 0;
   document.getElementById("r-risk-bar").style.width = (risk * 10) + "%";
   document.getElementById("r-risk-value").textContent = risk + " / 10";
@@ -794,9 +967,12 @@ async function runAnalysis() {
   const loader = document.getElementById("loader");
   const errorEl = document.getElementById("error-msg");
   const aiCrawl = document.getElementById("ai-crawl-check").checked;
+  const deepDiscovery = document.getElementById("deep-discovery-check").checked;
+  const knownSiteSlug = document.getElementById("known-site-dropdown").value;
+  const useKnownSite = knownSiteSlug && knownSiteSlug !== "__other__";
 
-  if (!url && !rawText && !selectedFile) {
-    errorEl.textContent = "Please enter a URL, paste T&C text, or upload a file.";
+  if (!useKnownSite && !url && !rawText && !selectedFile) {
+    errorEl.textContent = "Please pick a platform, enter a URL, paste T&C text, or upload a file.";
     errorEl.classList.add("active");
     return;
   }
@@ -814,7 +990,9 @@ async function runAnalysis() {
     "tier-compare": "Comparing plan differences... this may take 30-60 seconds.",
   };
   let lt = loaderTexts[analysisMode] || loaderTexts["quick"];
-  if (aiCrawl) lt = "Discovering related pages and analysing... this may take 1-2 minutes.";
+  if (useKnownSite) lt = "Scraping all curated policy pages for this platform... this may take 30-60 seconds.";
+  else if (deepDiscovery) lt = "Deep-discovering policy pages via Firecrawl... this may take 30-90 seconds.";
+  else if (aiCrawl) lt = "Discovering related pages and analysing... this may take 1-2 minutes.";
   document.getElementById("loader-text").innerHTML = lt;
 
   const cfg = getApiConfig();
@@ -838,7 +1016,13 @@ async function runAnalysis() {
       // JSON request
       const endpoints = { "quick": "/api/analyse", "deep": "/api/deep-analyse", "tier-compare": "/api/tier-compare" };
       const endpoint = endpoints[analysisMode] || "/api/analyse";
-      const payload = { url: url, raw_text: rawText, ai_crawl: aiCrawl };
+      const payload = {
+        url: url,
+        raw_text: rawText,
+        ai_crawl: aiCrawl,
+        deep_discovery: deepDiscovery,
+        known_site: useKnownSite ? knownSiteSlug : "",
+      };
       if (analysisMode === "deep" && tier) payload.tier = tier;
       if (cfg.api_key) payload.api_key = cfg.api_key;
       if (cfg.base_url) payload.api_base_url = cfg.base_url;
@@ -872,6 +1056,7 @@ async function runAnalysis() {
 
 document.getElementById("url-input").addEventListener("keydown", function(e) { if (e.key === "Enter") runAnalysis(); });
 loadSettings();
+loadKnownSites();
 </script>
 </body>
 </html>

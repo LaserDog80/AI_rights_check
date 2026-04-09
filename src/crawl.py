@@ -6,12 +6,14 @@ from urllib.parse import urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup
 
+from . import firecrawl_client
 from .extraction import (
     HEADERS, MAX_TEXT_LENGTH, PASTE_OR_UPLOAD_HINT,
     _check_cloudflare, _fetch_html_with_playwright, _extract_text_from_html,
     fetch_terms_text,
 )
 from .analysis import get_client
+from .known_sites import KNOWN_SITES, get_site
 
 MAX_PAGES = 8
 
@@ -211,4 +213,222 @@ def ai_crawl(url: str, api_key: str = "", base_url: str = "",
         "combined_text": combined_text,
         "pages_crawled": pages_crawled,
         "page_count": len(pages_crawled),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Firecrawl-powered crawl strategies
+# ---------------------------------------------------------------------------
+def _combine_scraped(scraped: list[dict], max_length: int) -> tuple[str, list[dict]]:
+    """Join a list of scrape results into one document with source attribution."""
+    parts: list[str] = []
+    pages: list[dict] = []
+    for item in scraped:
+        url = item.get("url", "")
+        markdown = item.get("markdown", "")
+        if not markdown or len(markdown) < 100:
+            continue
+        pages.append({
+            "url": url,
+            "type": "policy/terms page",
+            "text_length": len(markdown),
+        })
+        parts.append(f"=== SOURCE: {url} ===\n\n{markdown}")
+    combined = "\n\n---\n\n".join(parts)
+    if len(combined) > max_length:
+        combined = combined[:max_length]
+    return combined, pages
+
+
+def known_site_crawl(slug: str, progress_callback=None) -> dict:
+    """Scrape every URL we have on file for a curated known platform.
+
+    Returns the same dict shape as :func:`ai_crawl` plus a ``known_site``
+    metadata block describing the platform, its tiers, and (for aggregators)
+    its underlying-model warning.
+    """
+    site = get_site(slug)
+    if not site:
+        return {
+            "combined_text": "",
+            "pages_crawled": [],
+            "page_count": 0,
+            "error": f"Unknown site slug: {slug}",
+        }
+
+    def _report(msg, step, total):
+        if progress_callback:
+            progress_callback(msg, step, total)
+
+    urls = list(site.get("urls", []))
+    if not urls:
+        return {
+            "combined_text": "",
+            "pages_crawled": [],
+            "page_count": 0,
+            "error": f"No URLs configured for {site.get('name', slug)}",
+        }
+
+    _report(f"Scraping {len(urls)} pages for {site['name']}...", 1, 2)
+
+    # Prefer Firecrawl for parallel scraping when available, otherwise fall
+    # back to the legacy fetch_terms_text pipeline (sequential).
+    if firecrawl_client.is_enabled():
+        try:
+            scraped = firecrawl_client.scrape_many(urls)
+        except Exception as exc:
+            return _legacy_known_site_crawl(site, urls, str(exc), _report)
+    else:
+        return _legacy_known_site_crawl(site, urls, "", _report)
+
+    _report("Aggregating content...", 2, 2)
+    combined_text, pages_crawled = _combine_scraped(scraped, MAX_TEXT_LENGTH * 3)
+
+    if not combined_text:
+        return {
+            "combined_text": "",
+            "pages_crawled": [],
+            "page_count": 0,
+            "error": (
+                f"Could not extract text from any of the {len(urls)} configured"
+                f" pages for {site['name']}." + PASTE_OR_UPLOAD_HINT
+            ),
+        }
+
+    return {
+        "combined_text": combined_text,
+        "pages_crawled": pages_crawled,
+        "page_count": len(pages_crawled),
+        "known_site": {
+            "slug": slug,
+            "name": site["name"],
+            "category": site.get("category"),
+            "tiers": site.get("tiers", []),
+            "is_aggregator": site.get("category") == "aggregator",
+            "underlying_models": site.get("underlying_models", []),
+            "stacked_terms_note": site.get("stacked_terms_note", ""),
+            "highlights": site.get("highlights", []),
+        },
+    }
+
+
+def _legacy_known_site_crawl(site: dict, urls: list[str], firecrawl_err: str,
+                              report) -> dict:
+    """Fallback: scrape known-site URLs sequentially via the legacy pipeline."""
+    pages_crawled: list[dict] = []
+    combined_parts: list[str] = []
+    for i, page_url in enumerate(urls):
+        report(f"Fetching page {i + 1} of {len(urls)}...", i + 1, len(urls))
+        try:
+            text = fetch_terms_text(page_url)
+            if text and len(text) > 100:
+                pages_crawled.append({
+                    "url": page_url,
+                    "type": "policy/terms page",
+                    "text_length": len(text),
+                })
+                combined_parts.append(f"=== SOURCE: {page_url} ===\n\n{text}")
+        except Exception:
+            continue
+
+    combined_text = "\n\n---\n\n".join(combined_parts)
+    if len(combined_text) > MAX_TEXT_LENGTH * 3:
+        combined_text = combined_text[: MAX_TEXT_LENGTH * 3]
+
+    if not combined_text:
+        msg = (
+            f"Could not extract text from any of the {len(urls)} configured"
+            f" pages for {site['name']}."
+        )
+        if firecrawl_err:
+            msg += f" Firecrawl error: {firecrawl_err}."
+        return {
+            "combined_text": "",
+            "pages_crawled": [],
+            "page_count": 0,
+            "error": msg + PASTE_OR_UPLOAD_HINT,
+        }
+
+    return {
+        "combined_text": combined_text,
+        "pages_crawled": pages_crawled,
+        "page_count": len(pages_crawled),
+        "known_site": {
+            "slug": next(
+                (k for k, v in KNOWN_SITES.items() if v is site), ""
+            ),
+            "name": site["name"],
+            "category": site.get("category"),
+            "tiers": site.get("tiers", []),
+            "is_aggregator": site.get("category") == "aggregator",
+            "underlying_models": site.get("underlying_models", []),
+            "stacked_terms_note": site.get("stacked_terms_note", ""),
+            "highlights": site.get("highlights", []),
+        },
+    }
+
+
+def firecrawl_discovery_crawl(url: str, progress_callback=None) -> dict:
+    """Deep-discovery crawl for an unknown site via Firecrawl ``/map``.
+
+    Strategy:
+    1. Map the entire domain (cheap, no page fetches).
+    2. Filter the URL list down to ones that look like legal/policy pages.
+    3. Scrape the top N candidates in parallel.
+    4. Combine into a single document with source attribution.
+
+    Falls back to :func:`ai_crawl` if Firecrawl is not configured.
+    """
+    def _report(msg, step, total):
+        if progress_callback:
+            progress_callback(msg, step, total)
+
+    if not firecrawl_client.is_enabled():
+        # No Firecrawl key — use the existing LLM-driven crawler
+        return ai_crawl(url, progress_callback=progress_callback)
+
+    _report("Mapping domain to discover policy pages...", 1, 3)
+    try:
+        candidates = firecrawl_client.discover_policy_urls(url, max_results=MAX_PAGES)
+    except firecrawl_client.FirecrawlError as exc:
+        return {
+            "combined_text": "",
+            "pages_crawled": [],
+            "page_count": 0,
+            "error": (
+                f"Firecrawl could not map this domain: {exc}." + PASTE_OR_UPLOAD_HINT
+            ),
+        }
+
+    if not candidates:
+        # Map returned nothing useful — fall back to LLM-driven crawl
+        return ai_crawl(url, progress_callback=progress_callback)
+
+    _report(f"Scraping {len(candidates)} discovered pages...", 2, 3)
+    try:
+        scraped = firecrawl_client.scrape_many(candidates)
+    except Exception as exc:
+        return {
+            "combined_text": "",
+            "pages_crawled": [],
+            "page_count": 0,
+            "error": (
+                f"Firecrawl scrape failed during discovery: {exc}."
+                + PASTE_OR_UPLOAD_HINT
+            ),
+        }
+
+    _report("Aggregating content...", 3, 3)
+    combined_text, pages_crawled = _combine_scraped(scraped, MAX_TEXT_LENGTH * 3)
+
+    if not combined_text:
+        # Nothing usable from /map results — try the LLM crawler as a last resort
+        return ai_crawl(url, progress_callback=progress_callback)
+
+    return {
+        "combined_text": combined_text,
+        "pages_crawled": pages_crawled,
+        "page_count": len(pages_crawled),
+        "discovery_method": "firecrawl_map",
+        "candidates_found": len(candidates),
     }

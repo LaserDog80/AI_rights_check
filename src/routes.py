@@ -9,7 +9,9 @@ from dotenv import load_dotenv, set_key
 
 from .extraction import fetch_terms_text, extract_text_from_file, MAX_TEXT_LENGTH
 from .analysis import analyse_terms, deep_analyse_terms, tier_compare_terms
-from .crawl import ai_crawl
+from .crawl import ai_crawl, firecrawl_discovery_crawl, known_site_crawl
+from . import firecrawl_client
+from .known_sites import KNOWN_SITES, get_site, list_sites
 
 app = Flask(__name__, template_folder="../templates")
 
@@ -27,25 +29,77 @@ def _get_api_config():
     }
 
 
-def _get_terms_text(data: dict, api_config: dict) -> str:
-    """Extract terms text from URL, raw text, or AI-assisted crawl."""
+def _get_terms_text(data: dict, api_config: dict):
+    """Extract terms text from a URL, raw text, known site, or deep crawl.
+
+    Returns a 4-tuple: ``(text, source_label, pages_list, extras_dict)``.
+    The ``extras_dict`` carries metadata that should be merged into the API
+    response (e.g. ``known_site`` info for aggregator warnings).
+    """
     url = data.get("url", "").strip()
     raw_text = data.get("raw_text", "").strip()
-    use_ai_crawl = data.get("ai_crawl", False)
+    known_site_slug = (data.get("known_site") or "").strip()
+    use_deep_discovery = bool(data.get("deep_discovery", False))
+    use_ai_crawl = bool(data.get("ai_crawl", False))
 
+    extras: dict = {}
+
+    # Mode 1: known curated site (dropdown selection)
+    if known_site_slug:
+        result = known_site_crawl(known_site_slug)
+        if result.get("error"):
+            raise ValueError(result["error"])
+        text = result["combined_text"]
+        site_info = result.get("known_site", {})
+        if site_info:
+            extras["known_site"] = site_info
+        source = site_info.get("name") or known_site_slug
+        return text, source, result.get("pages_crawled", []), extras
+
+    # Mode 2: deep discovery via Firecrawl /map (unknown vendor URL)
+    if url and use_deep_discovery:
+        result = firecrawl_discovery_crawl(url)
+        if result.get("error"):
+            raise ValueError(result["error"])
+        if "discovery_method" in result:
+            extras["discovery_method"] = result["discovery_method"]
+            extras["candidates_found"] = result.get("candidates_found", 0)
+        return (
+            result["combined_text"], url, result.get("pages_crawled", []), extras,
+        )
+
+    # Mode 3: legacy AI crawl
     if url and use_ai_crawl:
         result = ai_crawl(url, **api_config)
         if result.get("error"):
             raise ValueError(result["error"])
-        text = result["combined_text"]
-        return text, url, result.get("pages_crawled", [])
-    elif url:
+        return (
+            result["combined_text"], url, result.get("pages_crawled", []), extras,
+        )
+
+    # Mode 4: single-URL fetch
+    if url:
         text = fetch_terms_text(url)
-        return text, url, []
-    elif raw_text:
-        return raw_text[:MAX_TEXT_LENGTH], "pasted text", []
-    else:
-        raise ValueError("Provide a URL or paste the T&C text.")
+        return text, url, [], extras
+
+    # Mode 5: pasted text
+    if raw_text:
+        return raw_text[:MAX_TEXT_LENGTH], "pasted text", [], extras
+
+    raise ValueError("Provide a URL, pick a known site, or paste the T&C text.")
+
+
+def _attach_metadata(result: dict, source: str, text_len: int,
+                      pages: list, extras: dict) -> dict:
+    """Merge crawl metadata into an LLM analysis result."""
+    result["source_url"] = source
+    result["text_length"] = text_len
+    if pages:
+        result["pages_crawled"] = pages
+    if extras:
+        for key, val in extras.items():
+            result[key] = val
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -62,7 +116,7 @@ def api_analyse():
     api_config = _get_api_config()
 
     try:
-        terms_text, source, pages = _get_terms_text(data, api_config)
+        terms_text, source, pages, extras = _get_terms_text(data, api_config)
 
         if len(terms_text) < 100:
             return jsonify({"error": (
@@ -71,11 +125,7 @@ def api_analyse():
             )}), 400
 
         result = analyse_terms(terms_text, **api_config)
-        result["source_url"] = source
-        result["text_length"] = len(terms_text)
-        if pages:
-            result["pages_crawled"] = pages
-        return jsonify(result)
+        return jsonify(_attach_metadata(result, source, len(terms_text), pages, extras))
 
     except json.JSONDecodeError:
         return jsonify({"error": "AI returned invalid JSON. Please try again."}), 502
@@ -94,7 +144,7 @@ def api_deep_analyse():
     tier = data.get("tier", "").strip()
 
     try:
-        terms_text, source, pages = _get_terms_text(data, api_config)
+        terms_text, source, pages, extras = _get_terms_text(data, api_config)
 
         if len(terms_text) < 100:
             return jsonify({"error": (
@@ -103,11 +153,7 @@ def api_deep_analyse():
             )}), 400
 
         result = deep_analyse_terms(terms_text, tier=tier, **api_config)
-        result["source_url"] = source
-        result["text_length"] = len(terms_text)
-        if pages:
-            result["pages_crawled"] = pages
-        return jsonify(result)
+        return jsonify(_attach_metadata(result, source, len(terms_text), pages, extras))
 
     except json.JSONDecodeError:
         return jsonify({"error": "AI returned invalid JSON. Please try again."}), 502
@@ -125,7 +171,7 @@ def api_tier_compare():
     api_config = _get_api_config()
 
     try:
-        terms_text, source, pages = _get_terms_text(data, api_config)
+        terms_text, source, pages, extras = _get_terms_text(data, api_config)
 
         if len(terms_text) < 100:
             return jsonify({"error": (
@@ -134,11 +180,7 @@ def api_tier_compare():
             )}), 400
 
         result = tier_compare_terms(terms_text, **api_config)
-        result["source_url"] = source
-        result["text_length"] = len(terms_text)
-        if pages:
-            result["pages_crawled"] = pages
-        return jsonify(result)
+        return jsonify(_attach_metadata(result, source, len(terms_text), pages, extras))
 
     except json.JSONDecodeError:
         return jsonify({"error": "AI returned invalid JSON. Please try again."}), 502
@@ -148,6 +190,34 @@ def api_tier_compare():
         return jsonify({"error": str(e)}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/known-sites", methods=["GET"])
+def api_known_sites():
+    """Return the curated list of image/video gen platforms for the dropdown."""
+    return jsonify({
+        "sites": list_sites(),
+        "firecrawl_enabled": firecrawl_client.is_enabled(),
+    })
+
+
+@app.route("/api/save-firecrawl-key", methods=["POST"])
+def api_save_firecrawl_key():
+    """Persist the Firecrawl API key to .env so the running server picks it up."""
+    data = request.get_json(force=True)
+    env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+    if not os.path.exists(env_path):
+        with open(env_path, "w") as f:
+            f.write("")
+
+    api_key = data.get("firecrawl_api_key", "").strip()
+    if api_key:
+        set_key(env_path, "FIRECRAWL_API_KEY", api_key)
+
+    load_dotenv(env_path, override=True)
+    firecrawl_client.reset_client()
+
+    return jsonify({"status": "saved", "enabled": firecrawl_client.is_enabled()})
 
 
 @app.route("/api/save-config", methods=["POST"])
