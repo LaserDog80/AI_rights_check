@@ -49,8 +49,8 @@ KNOWN_SITES: dict[str, dict] = {
         "category": CATEGORY_DIRECT,
         "tiers": ["Basic", "Standard", "Pro", "Fancy"],
         "urls": [
-            "https://pika.art/terms",
-            "https://pika.art/privacy",
+            "https://pika.art/terms-of-service",
+            "https://pika.art/privacy-policy",
         ],
     },
     "luma": {
@@ -88,8 +88,8 @@ KNOWN_SITES: dict[str, dict] = {
         "category": CATEGORY_DIRECT,
         "tiers": ["Free", "Standard", "Pro", "Premier"],
         "urls": [
-            "https://klingai.com/terms-of-service",
-            "https://klingai.com/privacy-policy",
+            "https://kling.ai/docs/user-policy",
+            "https://kling.ai/docs/privacy-policy",
         ],
     },
     "minimax": {
@@ -217,17 +217,19 @@ KNOWN_SITES: dict[str, dict] = {
         ),
     },
     "weavy": {
-        "name": "Weavy",
+        "name": "Weavy (Figma Weave)",
         "category": CATEGORY_AGGREGATOR,
-        "tiers": ["Free", "Pro", "Team"],
+        "tiers": ["Free", "Pro", "Team", "Enterprise"],
         "urls": [
-            "https://www.weavy.ai/terms",
-            "https://www.weavy.ai/privacy",
+            "https://help.weavy.ai/en/collections/15341987-account-management",
+            "https://help.weavy.ai/en/articles/12267070-figma-weave-s-subscription-plans",
+            "https://help.weavy.ai/en/articles/14034721-verified-and-unverified-models",
         ],
         "underlying_models": ["Flux", "Kling", "Runway", "Luma", "Stable Diffusion"],
         "stacked_terms_note": (
-            "Weavy is a node-based creative canvas hosting many models — "
-            "outputs are subject to Weavy's terms plus each underlying provider."
+            "Weavy (now Figma Weave) is a node-based creative canvas hosting many "
+            "models — outputs are subject to Figma's terms plus each underlying "
+            "provider. No standalone ToS found; governed by Figma's platform terms."
         ),
     },
     "fal": {
@@ -235,8 +237,8 @@ KNOWN_SITES: dict[str, dict] = {
         "category": CATEGORY_AGGREGATOR,
         "tiers": ["Free", "Pay-as-you-go", "Growth", "Enterprise"],
         "urls": [
-            "https://fal.ai/terms-of-service",
-            "https://fal.ai/privacy-policy",
+            "https://fal.ai/legal/terms-of-service",
+            "https://fal.ai/legal/privacy-policy",
         ],
         "underlying_models": [
             "Flux", "Kling", "Hailuo", "Stable Diffusion", "LTX", "Hunyuan",
@@ -247,24 +249,34 @@ KNOWN_SITES: dict[str, dict] = {
         ),
     },
 
-    # ----- Avatar / character video -----
-    "hedra": {
-        "name": "Hedra",
-        "category": CATEGORY_AVATAR,
-        "tiers": ["Free", "Basic", "Creator", "Pro"],
+    # ----- Infrastructure / API platforms -----
+    "replicate": {
+        "name": "Replicate",
+        "category": CATEGORY_DIRECT,
+        "tiers": ["Free", "Pay-as-you-go", "Enterprise"],
         "urls": [
-            "https://www.hedra.com/terms-of-service",
-            "https://www.hedra.com/privacy-policy",
+            "https://replicate.com/terms",
+            "https://replicate.com/privacy",
         ],
     },
+    "comfy": {
+        "name": "Comfy (ComfyUI)",
+        "category": CATEGORY_DIRECT,
+        "tiers": ["Free", "Pro"],
+        "urls": [
+            "https://www.comfy.org/terms-of-service",
+            "https://www.comfy.org/privacy-policy",
+        ],
+    },
+
+    # ----- Avatar / character video -----
     "heygen": {
         "name": "HeyGen",
         "category": CATEGORY_AVATAR,
         "tiers": ["Free", "Creator", "Team", "Enterprise"],
         "urls": [
-            "https://www.heygen.com/policy/terms-of-service",
-            "https://www.heygen.com/policy/privacy-policy",
-            "https://www.heygen.com/policy/moderation-policy",
+            "https://www.heygen.com/terms",
+            "https://www.heygen.com/privacy",
         ],
     },
     "synthesia": {
@@ -272,9 +284,8 @@ KNOWN_SITES: dict[str, dict] = {
         "category": CATEGORY_AVATAR,
         "tiers": ["Starter", "Creator", "Enterprise"],
         "urls": [
-            "https://www.synthesia.io/terms",
+            "https://www.synthesia.io/legal/customer-terms-of-service",
             "https://www.synthesia.io/privacy-notice",
-            "https://www.synthesia.io/acceptable-use-policy",
         ],
     },
 }

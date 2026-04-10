@@ -292,20 +292,20 @@ footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.8rem}
       </select>
     </div>
     <div id="known-site-info" style="display:none;padding:.6rem .8rem;margin-bottom:.75rem;background:rgba(108,92,231,.06);border:1px solid rgba(108,92,231,.2);border-radius:8px;font-size:.82rem;color:var(--text2);line-height:1.45"></div>
+
+    <div id="input-hint" style="display:none;font-size:.78rem;color:var(--amber);margin-bottom:.5rem"></div>
     <div class="input-group">
-      <input type="text" id="url-input" placeholder="Paste a T&amp;Cs / ToS URL (e.g. https://midjourney.com/legal/terms-of-service)">
+      <input type="text" id="url-input" placeholder="Or paste a URL to any site's T&amp;Cs" oninput="onUrlInput()">
       <button class="btn btn-primary" id="analyse-btn" onclick="runAnalysis()">
         <span id="btn-label">Analyse</span>
       </button>
     </div>
     <div class="crawl-option">
       <input type="checkbox" id="deep-discovery-check">
-      <label for="deep-discovery-check">Deep discovery (uses Firecrawl /map to find every legal page on the domain — best for unknown sites)</label>
+      <label for="deep-discovery-check">Auto-discover T&amp;Cs (finds terms of service, privacy policy, AUP, etc. on the same site)</label>
     </div>
-    <div class="crawl-option">
-      <input type="checkbox" id="ai-crawl-check">
-      <label for="ai-crawl-check">Auto-discover related pages (follows links to find privacy policy, pricing, AUP, etc. on the same site)</label>
-    </div>
+    <!-- ai-crawl-check kept as hidden element so existing JS references don't break -->
+    <input type="checkbox" id="ai-crawl-check" style="display:none">
 
     <div class="or-divider">— or paste the text directly —</div>
     <textarea id="text-input" placeholder="Paste Terms &amp; Conditions text here..."></textarea>
@@ -379,6 +379,7 @@ footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.8rem}
       <h3 style="margin-bottom:.5rem">Recommendations</h3>
       <ul class="rec-list" id="r-recs"></ul>
     </div>
+    <div class="card" id="r-dates" style="font-size:.78rem;color:var(--text2);display:none"></div>
   </div>
 
   <!-- Clause-by-Clause Results -->
@@ -429,6 +430,7 @@ footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.8rem}
       <h3 style="margin-bottom:.75rem">Prioritised Recommendations</h3>
       <div id="dr-recs"></div>
     </div>
+    <div class="card" id="dr-dates" style="font-size:.78rem;color:var(--text2);display:none"></div>
   </div>
 
   <!-- Compare Plans Results -->
@@ -459,6 +461,7 @@ footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.8rem}
       <h3 style="margin-bottom:.5rem">Upgrade Recommendation</h3>
       <div id="tr-upgrade" style="font-size:.92rem;line-height:1.5"></div>
     </div>
+    <div class="card" id="tr-dates" style="font-size:.78rem;color:var(--text2);display:none"></div>
   </div>
 
   <footer>AI Terms Analyzer &middot; Powered by Nebius AI</footer>
@@ -585,26 +588,30 @@ function onKnownSiteChange() {
   const info = document.getElementById("known-site-info");
   const urlInput = document.getElementById("url-input");
   const deepCheck = document.getElementById("deep-discovery-check");
+  const hint = document.getElementById("input-hint");
 
   if (!slug || slug === "__other__") {
     info.style.display = "none";
     urlInput.disabled = false;
+    hint.style.display = "none";
     if (slug === "__other__") {
       urlInput.placeholder = "Paste a T&Cs / ToS URL — we'll deep-discover related policy pages";
       deepCheck.checked = true;
     } else {
-      urlInput.placeholder = "Paste a T&Cs / ToS URL (e.g. https://midjourney.com/legal/terms-of-service)";
+      urlInput.placeholder = "Or paste a URL to any site's T&Cs";
     }
     return;
   }
 
-  // Known site selected — disable URL input, show info banner
+  // Known site selected — clear URL input, show info banner
+  urlInput.value = "";
+  urlInput.disabled = true;
+  deepCheck.checked = false;
+  hint.innerHTML = "Using platform dropdown — clear the dropdown to enter a URL instead.";
+  hint.style.display = "block";
+
   const site = knownSitesCache.find(function(s) { return s.slug === slug; });
   if (!site) return;
-
-  urlInput.disabled = true;
-  urlInput.value = "";
-  deepCheck.checked = false;
 
   let html = '<strong style="color:var(--accent2)">' + esc(site.name) + '</strong>';
   if (site.tiers && site.tiers.length) {
@@ -615,6 +622,22 @@ function onKnownSiteChange() {
   }
   info.innerHTML = html;
   info.style.display = "block";
+}
+
+function onUrlInput() {
+  const urlInput = document.getElementById("url-input");
+  const dd = document.getElementById("known-site-dropdown");
+  const info = document.getElementById("known-site-info");
+  const hint = document.getElementById("input-hint");
+
+  if (urlInput.value.trim()) {
+    dd.value = "";
+    info.style.display = "none";
+    hint.innerHTML = "Using URL — select a platform from the dropdown instead if it's listed.";
+    hint.style.display = "block";
+  } else {
+    hint.style.display = "none";
+  }
 }
 
 function getApiConfig() {
@@ -733,6 +756,28 @@ function esc(str) {
   return d.innerHTML;
 }
 
+function renderDatesFooter(elId, data) {
+  const el = document.getElementById(elId);
+  const parts = [];
+  if (data.terms_fetched_at) {
+    const d = new Date(data.terms_fetched_at);
+    parts.push("Terms fetched: " + d.toLocaleDateString("en-GB", {day:"numeric",month:"short",year:"numeric"}));
+  }
+  if (data.analysed_at) {
+    const d = new Date(data.analysed_at);
+    parts.push("Analysis cached: " + d.toLocaleDateString("en-GB", {day:"numeric",month:"short",year:"numeric"}));
+  }
+  if (data.from_analysis_cache) {
+    parts.push("Served from cache");
+  }
+  if (parts.length) {
+    el.textContent = parts.join(" · ");
+    el.style.display = "block";
+  } else {
+    el.style.display = "none";
+  }
+}
+
 function renderResults(data) {
   document.getElementById("r-platform").textContent = data.platform_name || "Unknown";
   document.getElementById("r-verdict").textContent = data.overall_verdict || "";
@@ -781,6 +826,7 @@ function renderResults(data) {
   const rl = document.getElementById("r-recs");
   rl.innerHTML = "";
   (data.recommendations || []).forEach(function(r) { rl.innerHTML += '<li>' + esc(r) + '</li>'; });
+  renderDatesFooter("r-dates", data);
   document.getElementById("results").classList.add("active");
 }
 
@@ -865,6 +911,7 @@ function renderDeepResults(data) {
     tierCard.style.display = "none";
   }
 
+  renderDatesFooter("dr-dates", data);
   document.getElementById("deep-results").classList.add("active");
 }
 
@@ -957,6 +1004,7 @@ function renderTierResults(data) {
   // Upgrade recommendation
   document.getElementById("tr-upgrade").textContent = data.upgrade_recommendation || "No upgrade recommendation available.";
 
+  renderDatesFooter("tr-dates", data);
   document.getElementById("tier-results").classList.add("active");
 }
 
@@ -969,7 +1017,8 @@ async function runAnalysis() {
   const aiCrawl = document.getElementById("ai-crawl-check").checked;
   const deepDiscovery = document.getElementById("deep-discovery-check").checked;
   const knownSiteSlug = document.getElementById("known-site-dropdown").value;
-  const useKnownSite = knownSiteSlug && knownSiteSlug !== "__other__";
+  // URL overrides dropdown; dropdown only used when no URL entered
+  const useKnownSite = !url && knownSiteSlug && knownSiteSlug !== "__other__";
 
   if (!useKnownSite && !url && !rawText && !selectedFile) {
     errorEl.textContent = "Please pick a platform, enter a URL, paste T&C text, or upload a file.";
@@ -991,8 +1040,7 @@ async function runAnalysis() {
   };
   let lt = loaderTexts[analysisMode] || loaderTexts["quick"];
   if (useKnownSite) lt = "Scraping all curated policy pages for this platform... this may take 30-60 seconds.";
-  else if (deepDiscovery) lt = "Deep-discovering policy pages via Firecrawl... this may take 30-90 seconds.";
-  else if (aiCrawl) lt = "Discovering related pages and analysing... this may take 1-2 minutes.";
+  else if (deepDiscovery) lt = "Discovering related pages on the site... this may take 30-90 seconds.";
   document.getElementById("loader-text").innerHTML = lt;
 
   const cfg = getApiConfig();

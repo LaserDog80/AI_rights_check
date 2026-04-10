@@ -145,21 +145,11 @@ def scrape_url(url: str) -> str:
     """
     client = _get_client()
     try:
-        result = client.scrape_url(
+        result = client.scrape(
             url,
             formats=["markdown"],
             only_main_content=True,
             timeout=SCRAPE_TIMEOUT_MS,
-        )
-    except TypeError:
-        # Older SDK versions use a ``params`` dict instead of kwargs.
-        result = client.scrape_url(
-            url,
-            params={
-                "formats": ["markdown"],
-                "onlyMainContent": True,
-                "timeout": SCRAPE_TIMEOUT_MS,
-            },
         )
     except Exception as exc:  # pragma: no cover - network failure path
         raise FirecrawlError(f"Firecrawl scrape failed for {url}: {exc}") from exc
@@ -212,10 +202,7 @@ def map_domain(url: str, search: str = "") -> list[str]:
     """
     client = _get_client()
     try:
-        result = client.map_url(url, search=search) if search else client.map_url(url)
-    except TypeError:
-        params = {"search": search} if search else {}
-        result = client.map_url(url, params=params)
+        result = client.map(url, search=search) if search else client.map(url)
     except Exception as exc:  # pragma: no cover - network failure path
         raise FirecrawlError(f"Firecrawl map failed for {url}: {exc}") from exc
 

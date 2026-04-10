@@ -368,7 +368,67 @@ def _legacy_known_site_crawl(site: dict, urls: list[str], firecrawl_err: str,
     }
 
 
-def firecrawl_discovery_crawl(url: str, progress_callback=None) -> dict:
+# Common T&C path patterns to probe when discovery fails.
+_COMMON_TOC_PATHS = [
+    "/terms-of-service", "/terms", "/tos", "/legal/terms-of-service",
+    "/legal/terms", "/legal", "/privacy", "/privacy-policy",
+    "/acceptable-use", "/aup",
+    "/docs/terms-of-service", "/docs/privacy-policy",
+    "/docs/terms", "/docs/acceptable-use-policy",
+]
+
+
+def _probe_common_toc_urls(url: str, report=None) -> list[str]:
+    """Try well-known T&C URL patterns on the domain and its docs. subdomain.
+
+    Returns a list of URLs that responded with a 200 status.
+    """
+    parsed = urlparse(url)
+    domain = parsed.netloc.lstrip("www.")
+    bases = [
+        f"https://{parsed.netloc}",
+        f"https://www.{domain}",
+        f"https://docs.{domain}",
+    ]
+    # De-duplicate bases
+    bases = list(dict.fromkeys(bases))
+
+    if report:
+        report("Probing common T&C URL patterns...", 1, 3)
+
+    found: list[str] = []
+    seen: set[str] = set()
+    use_firecrawl = firecrawl_client.is_enabled()
+
+    for base in bases:
+        for path in _COMMON_TOC_PATHS:
+            probe_url = base + path
+            if probe_url in seen:
+                continue
+            seen.add(probe_url)
+            try:
+                resp = requests.get(probe_url, headers=HEADERS, timeout=8,
+                                    allow_redirects=True)
+                # Accept 200, or 403 when Firecrawl can bypass bot protection
+                if resp.status_code not in (200, 403):
+                    continue
+                if resp.status_code == 403 and not use_firecrawl:
+                    continue
+                final_url = resp.url
+                if final_url in seen:
+                    continue
+                seen.add(final_url)
+                found.append(final_url)
+            except requests.RequestException:
+                continue
+            if len(found) >= MAX_PAGES:
+                return found
+    return found
+
+
+def firecrawl_discovery_crawl(url: str, progress_callback=None,
+                              api_key: str = "", base_url: str = "",
+                              model: str = "") -> dict:
     """Deep-discovery crawl for an unknown site via Firecrawl ``/map``.
 
     Strategy:
@@ -383,26 +443,30 @@ def firecrawl_discovery_crawl(url: str, progress_callback=None) -> dict:
         if progress_callback:
             progress_callback(msg, step, total)
 
+    _ai_crawl_kwargs = dict(
+        api_key=api_key, base_url=base_url, model=model,
+        progress_callback=progress_callback,
+    )
+
     if not firecrawl_client.is_enabled():
         # No Firecrawl key — use the existing LLM-driven crawler
-        return ai_crawl(url, progress_callback=progress_callback)
+        return ai_crawl(url, **_ai_crawl_kwargs)
 
     _report("Mapping domain to discover policy pages...", 1, 3)
     try:
         candidates = firecrawl_client.discover_policy_urls(url, max_results=MAX_PAGES)
-    except firecrawl_client.FirecrawlError as exc:
-        return {
-            "combined_text": "",
-            "pages_crawled": [],
-            "page_count": 0,
-            "error": (
-                f"Firecrawl could not map this domain: {exc}." + PASTE_OR_UPLOAD_HINT
-            ),
-        }
+    except firecrawl_client.FirecrawlError:
+        # Map failed — fall back to LLM-driven crawl
+        return ai_crawl(url, **_ai_crawl_kwargs)
 
-    if not candidates:
-        # Map returned nothing useful — fall back to LLM-driven crawl
-        return ai_crawl(url, progress_callback=progress_callback)
+    # If map only returned the original URL (no actual policy pages found),
+    # try common T&C URL patterns before falling back to the LLM crawler.
+    if not candidates or candidates == [url]:
+        probed = _probe_common_toc_urls(url, _report)
+        if probed:
+            candidates = probed
+        else:
+            return ai_crawl(url, **_ai_crawl_kwargs)
 
     _report(f"Scraping {len(candidates)} discovered pages...", 2, 3)
     try:
@@ -423,7 +487,7 @@ def firecrawl_discovery_crawl(url: str, progress_callback=None) -> dict:
 
     if not combined_text:
         # Nothing usable from /map results — try the LLM crawler as a last resort
-        return ai_crawl(url, progress_callback=progress_callback)
+        return ai_crawl(url, **_ai_crawl_kwargs)
 
     return {
         "combined_text": combined_text,

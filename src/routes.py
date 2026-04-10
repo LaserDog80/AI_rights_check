@@ -11,6 +11,7 @@ from .extraction import fetch_terms_text, extract_text_from_file, MAX_TEXT_LENGT
 from .analysis import analyse_terms, deep_analyse_terms, tier_compare_terms
 from .crawl import ai_crawl, firecrawl_discovery_crawl, known_site_crawl
 from . import firecrawl_client
+from . import toc_cache
 from .known_sites import KNOWN_SITES, get_site, list_sites
 
 app = Flask(__name__, template_folder="../templates")
@@ -37,12 +38,24 @@ def _get_terms_text(data: dict, api_config: dict):
     response (e.g. ``known_site`` info for aggregator warnings).
     """
     url = data.get("url", "").strip()
+    if url and not url.startswith(("http://", "https://")):
+        url = "https://" + url
     raw_text = data.get("raw_text", "").strip()
     known_site_slug = (data.get("known_site") or "").strip()
     use_deep_discovery = bool(data.get("deep_discovery", False))
     use_ai_crawl = bool(data.get("ai_crawl", False))
 
     extras: dict = {}
+
+    # Check cache first for URL-based requests (unless user pasted text)
+    if url and not raw_text:
+        cached = toc_cache.get(url)
+        if cached and cached.get("combined_text"):
+            extras["from_cache"] = True
+            extras["cached_at"] = cached.get("last_updated", "")
+            return (
+                cached["combined_text"], url, cached.get("pages", []), extras,
+            )
 
     # Mode 1: known curated site (dropdown selection)
     if known_site_slug:
@@ -54,32 +67,32 @@ def _get_terms_text(data: dict, api_config: dict):
         if site_info:
             extras["known_site"] = site_info
         source = site_info.get("name") or known_site_slug
-        return text, source, result.get("pages_crawled", []), extras
+        pages = result.get("pages_crawled", [])
+        if text:
+            toc_cache.save(url or known_site_slug, text, pages)
+        return text, source, pages, extras
 
-    # Mode 2: deep discovery via Firecrawl /map (unknown vendor URL)
-    if url and use_deep_discovery:
-        result = firecrawl_discovery_crawl(url)
+    # Mode 2: auto-discover related pages
+    # Uses Firecrawl /map when available, falls back to LLM-driven AI crawl.
+    if url and (use_deep_discovery or use_ai_crawl):
+        result = firecrawl_discovery_crawl(url, **api_config)
         if result.get("error"):
             raise ValueError(result["error"])
         if "discovery_method" in result:
             extras["discovery_method"] = result["discovery_method"]
             extras["candidates_found"] = result.get("candidates_found", 0)
-        return (
-            result["combined_text"], url, result.get("pages_crawled", []), extras,
-        )
-
-    # Mode 3: legacy AI crawl
-    if url and use_ai_crawl:
-        result = ai_crawl(url, **api_config)
-        if result.get("error"):
-            raise ValueError(result["error"])
-        return (
-            result["combined_text"], url, result.get("pages_crawled", []), extras,
-        )
+        text = result["combined_text"]
+        pages = result.get("pages_crawled", [])
+        if text:
+            toc_cache.save(url, text, pages)
+        return text, url, pages, extras
 
     # Mode 4: single-URL fetch
     if url:
         text = fetch_terms_text(url)
+        if text:
+            toc_cache.save(url, text, [{"url": url, "type": "single page",
+                                         "text_length": len(text)}])
         return text, url, [], extras
 
     # Mode 5: pasted text
@@ -110,12 +123,45 @@ def index():
     return render_template("index.html")
 
 
+def _cache_key_for_request(data: dict) -> str:
+    """Derive a cache key URL from the request data.
+
+    For known-site dropdown selections we use the first URL in the registry
+    (which matches how the T&C text was cached), not the slug itself.
+    """
+    url = data.get("url", "").strip()
+    if url and not url.startswith(("http://", "https://")):
+        url = "https://" + url
+    if url:
+        return url
+    known = (data.get("known_site") or "").strip()
+    if known:
+        site = get_site(known)
+        if site and site.get("urls"):
+            return site["urls"][0]
+    return ""
+
+
 @app.route("/api/analyse", methods=["POST"])
 def api_analyse():
     data = request.get_json(force=True)
     api_config = _get_api_config()
+    cache_url = _cache_key_for_request(data)
 
     try:
+        # Check for cached analysis
+        if cache_url:
+            cached = toc_cache.get_analysis(cache_url, "summary")
+            if cached:
+                result = cached["result"]
+                result["from_analysis_cache"] = True
+                result["analysed_at"] = cached.get("analysed_at", "")
+                # Attach terms_fetched_at from the T&C cache
+                tc = toc_cache.get(cache_url)
+                if tc:
+                    result["terms_fetched_at"] = tc.get("last_updated", "")
+                return jsonify(result)
+
         terms_text, source, pages, extras = _get_terms_text(data, api_config)
 
         if len(terms_text) < 100:
@@ -125,7 +171,16 @@ def api_analyse():
             )}), 400
 
         result = analyse_terms(terms_text, **api_config)
-        return jsonify(_attach_metadata(result, source, len(terms_text), pages, extras))
+        result = _attach_metadata(result, source, len(terms_text), pages, extras)
+
+        # Attach terms_fetched_at
+        if cache_url:
+            tc = toc_cache.get(cache_url)
+            if tc:
+                result["terms_fetched_at"] = tc.get("last_updated", "")
+            toc_cache.save_analysis(cache_url, "summary", result)
+
+        return jsonify(result)
 
     except json.JSONDecodeError:
         return jsonify({"error": "AI returned invalid JSON. Please try again."}), 502
@@ -142,8 +197,21 @@ def api_deep_analyse():
     data = request.get_json(force=True)
     api_config = _get_api_config()
     tier = data.get("tier", "").strip()
+    cache_url = _cache_key_for_request(data)
+    mode_key = f"deep:{tier}" if tier else "deep"
 
     try:
+        if cache_url:
+            cached = toc_cache.get_analysis(cache_url, mode_key)
+            if cached:
+                result = cached["result"]
+                result["from_analysis_cache"] = True
+                result["analysed_at"] = cached.get("analysed_at", "")
+                tc = toc_cache.get(cache_url)
+                if tc:
+                    result["terms_fetched_at"] = tc.get("last_updated", "")
+                return jsonify(result)
+
         terms_text, source, pages, extras = _get_terms_text(data, api_config)
 
         if len(terms_text) < 100:
@@ -153,7 +221,15 @@ def api_deep_analyse():
             )}), 400
 
         result = deep_analyse_terms(terms_text, tier=tier, **api_config)
-        return jsonify(_attach_metadata(result, source, len(terms_text), pages, extras))
+        result = _attach_metadata(result, source, len(terms_text), pages, extras)
+
+        if cache_url:
+            tc = toc_cache.get(cache_url)
+            if tc:
+                result["terms_fetched_at"] = tc.get("last_updated", "")
+            toc_cache.save_analysis(cache_url, mode_key, result)
+
+        return jsonify(result)
 
     except json.JSONDecodeError:
         return jsonify({"error": "AI returned invalid JSON. Please try again."}), 502
@@ -169,8 +245,20 @@ def api_deep_analyse():
 def api_tier_compare():
     data = request.get_json(force=True)
     api_config = _get_api_config()
+    cache_url = _cache_key_for_request(data)
 
     try:
+        if cache_url:
+            cached = toc_cache.get_analysis(cache_url, "tier-compare")
+            if cached:
+                result = cached["result"]
+                result["from_analysis_cache"] = True
+                result["analysed_at"] = cached.get("analysed_at", "")
+                tc = toc_cache.get(cache_url)
+                if tc:
+                    result["terms_fetched_at"] = tc.get("last_updated", "")
+                return jsonify(result)
+
         terms_text, source, pages, extras = _get_terms_text(data, api_config)
 
         if len(terms_text) < 100:
@@ -180,7 +268,15 @@ def api_tier_compare():
             )}), 400
 
         result = tier_compare_terms(terms_text, **api_config)
-        return jsonify(_attach_metadata(result, source, len(terms_text), pages, extras))
+        result = _attach_metadata(result, source, len(terms_text), pages, extras)
+
+        if cache_url:
+            tc = toc_cache.get(cache_url)
+            if tc:
+                result["terms_fetched_at"] = tc.get("last_updated", "")
+            toc_cache.save_analysis(cache_url, "tier-compare", result)
+
+        return jsonify(result)
 
     except json.JSONDecodeError:
         return jsonify({"error": "AI returned invalid JSON. Please try again."}), 502
@@ -199,6 +295,27 @@ def api_known_sites():
         "sites": list_sites(),
         "firecrawl_enabled": firecrawl_client.is_enabled(),
     })
+
+
+@app.route("/api/cached-tocs")
+def api_cached_tocs():
+    """Return a list of all cached T&C documents with timestamps."""
+    return jsonify({"cached": toc_cache.list_cached()})
+
+
+@app.route("/api/clear-cache", methods=["POST"])
+def api_clear_cache():
+    """Clear the cached T&Cs for a specific domain (forces re-fetch)."""
+    data = request.get_json(force=True)
+    url = data.get("url", "").strip()
+    if url:
+        cached = toc_cache.get(url)
+        if cached:
+            import pathlib
+            path = toc_cache._cache_path(toc_cache._domain_key(url))
+            path.unlink(missing_ok=True)
+            return jsonify({"status": "cleared", "domain": toc_cache._domain_key(url)})
+    return jsonify({"status": "not_found"})
 
 
 @app.route("/api/save-firecrawl-key", methods=["POST"])
