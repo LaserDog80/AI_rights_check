@@ -1,0 +1,220 @@
+{
+  "metadata": {
+    "description": "AI image and video generation platforms with links to their Terms & Conditions pages",
+    "last_updated": "2026-04-06",
+    "note": "URLs should be periodically verified as platforms frequently update their legal page structures"
+  },
+  "platforms": [
+    {
+      "name": "Midjourney",
+      "category": "image",
+      "url": "https://www.midjourney.com",
+      "terms_url": "https://docs.midjourney.com/hc/en-us/articles/32083055291277-Terms-of-Service",
+      "description": "AI image generator known for artistic coherence and high-fidelity textures"
+    },
+    {
+      "name": "OpenAI (DALL-E / Sora)",
+      "category": "image_and_video",
+      "url": "https://openai.com",
+      "terms_url": "https://openai.com/policies/row-terms-of-use/",
+      "terms_url_alt": "https://openai.com/policies/service-terms/",
+      "description": "DALL-E for image generation and Sora for video generation, both governed by OpenAI's unified terms"
+    },
+    {
+      "name": "Stability AI (Stable Diffusion)",
+      "category": "image",
+      "url": "https://stability.ai",
+      "terms_url": "https://stability.ai/terms-of-use",
+      "terms_url_api": "https://platform.stability.ai/legal/terms-of-service",
+      "description": "Open-source image generation models including Stable Diffusion"
+    },
+    {
+      "name": "Black Forest Labs (FLUX)",
+      "category": "image",
+      "url": "https://blackforestlabs.ai",
+      "terms_url": "https://blackforestlabs.ai/terms-of-service/",
+      "description": "Creators of FLUX image generation models, production-grade visual creation"
+    },
+    {
+      "name": "Adobe Firefly",
+      "category": "image",
+      "url": "https://firefly.adobe.com",
+      "terms_url": "https://www.adobe.com/legal/licenses-terms/adobe-gen-ai-user-guidelines.html",
+      "terms_url_general": "https://www.adobe.com/legal/terms.html",
+      "description": "Adobe's generative AI trained exclusively on Adobe Stock and public domain content"
+    },
+    {
+      "name": "Google Gemini (Imagen / Veo)",
+      "category": "image_and_video",
+      "url": "https://gemini.google.com",
+      "terms_url": "https://policies.google.com/terms/generative-ai",
+      "terms_url_api": "https://ai.google.dev/gemini-api/terms",
+      "description": "Google's generative AI for image (Imagen) and video (Veo) generation"
+    },
+    {
+      "name": "Canva (Magic Media)",
+      "category": "image",
+      "url": "https://www.canva.com",
+      "terms_url": "https://www.canva.com/policies/ai-product-terms/",
+      "terms_url_general": "https://www.canva.com/policies/terms-of-use/",
+      "description": "Design platform with integrated AI image generation via Magic Media"
+    },
+    {
+      "name": "Leonardo.ai",
+      "category": "image",
+      "url": "https://leonardo.ai",
+      "terms_url": "https://leonardo.ai/terms-of-service/",
+      "description": "Full creative suite with Image Guidance and Realtime Canvas features"
+    },
+    {
+      "name": "Ideogram",
+      "category": "image",
+      "url": "https://ideogram.ai",
+      "terms_url": "https://ideogram.ai/legal/tos",
+      "description": "AI image generator noted for superior typography and text rendering"
+    },
+    {
+      "name": "Recraft",
+      "category": "image",
+      "url": "https://www.recraft.ai",
+      "terms_url": "https://www.recraft.ai/terms",
+      "description": "Design-first AI generator that can produce native vector graphics (SVG)"
+    },
+    {
+      "name": "Grok (xAI / Aurora)",
+      "category": "image_and_video",
+      "url": "https://grok.com",
+      "terms_url": "https://x.ai/legal/terms-of-service",
+      "description": "xAI's generative platform integrated into X, text-to-video and image via Aurora model"
+    },
+    {
+      "name": "Runway",
+      "category": "video",
+      "url": "https://runwayml.com",
+      "terms_url": "https://runwayml.com/terms-of-use",
+      "description": "AI video generation platform with Gen-4 model for creative professionals"
+    },
+    {
+      "name": "Kling AI",
+      "category": "video",
+      "url": "https://app.klingai.com",
+      "terms_url": "https://app.klingai.com/global/docs/user-policy",
+      "description": "AI video generator supporting up to 3-minute clips with native audio and character consistency"
+    },
+    {
+      "name": "Pika",
+      "category": "video",
+      "url": "https://pika.art",
+      "terms_url": "https://pika.art/terms-of-service",
+      "description": "Idea-to-video AI platform for creative video generation"
+    },
+    {
+      "name": "Luma Dream Machine",
+      "category": "video",
+      "url": "https://lumalabs.ai/dream-machine",
+      "terms_url": "https://lumalabs.ai/learning-hub/terms-of-use",
+      "description": "AI cinematic video generator by Luma Labs"
+    },
+    {
+      "name": "HeyGen",
+      "category": "video",
+      "url": "https://www.heygen.com",
+      "terms_url": "https://www.heygen.com/terms",
+      "description": "AI avatar video platform for corporate training and multilingual marketing"
+    },
+    {
+      "name": "Synthesia",
+      "category": "video",
+      "url": "https://www.synthesia.io",
+      "terms_url": "https://www.synthesia.io/legal/customer-terms-of-service",
+      "terms_url_user": "https://www.synthesia.io/legal/user-terms-of-service",
+      "description": "AI avatar video generation for professional talking-head content"
+    },
+    {
+      "name": "Hailuo AI (MiniMax)",
+      "category": "video",
+      "url": "https://hailuoai.video",
+      "terms_url": "https://hailuoai.video/doc/terms-of-service.html",
+      "description": "AI video generator by MiniMax, text and image to video"
+    },
+    {
+      "name": "Pictory",
+      "category": "video",
+      "url": "https://pictory.ai",
+      "terms_url": "https://pictory.ai/terms-of-service",
+      "description": "AI video maker for fast social media content creation"
+    },
+    {
+      "name": "DeepBrain AI",
+      "category": "video",
+      "url": "https://www.deepbrain.io",
+      "terms_url": "https://www.deepbrain.io/terms-of-use",
+      "description": "AI avatar video generation platform (AI Studios)"
+    },
+    {
+      "name": "Higgsfield",
+      "category": "video",
+      "url": "https://higgsfield.ai",
+      "terms_url": "https://higgsfield.ai/terms-of-use-agreement",
+      "description": "Professional AI video studio for prosumer creators"
+    },
+    {
+      "name": "VEED.io",
+      "category": "video",
+      "url": "https://www.veed.io",
+      "terms_url": "https://www.veed.io/terms-of-use",
+      "terms_url_ai": "https://www.veed.io/terms-of-use/ai-tools",
+      "description": "Browser-based video editor with integrated AI generation engines"
+    },
+    {
+      "name": "CapCut",
+      "category": "video",
+      "url": "https://www.capcut.com",
+      "terms_url": "https://www.capcut.com/clause/terms-of-service",
+      "description": "Video editor integrating Sora 2 and Veo 3.1 for AI-generated clips"
+    },
+    {
+      "name": "Freepik",
+      "category": "aggregator",
+      "url": "https://www.freepik.com",
+      "terms_url": "https://www.freepik.com/legal/terms-of-use",
+      "description": "AI creative platform bundling multiple image and video generation models"
+    },
+    {
+      "name": "fal.ai",
+      "category": "aggregator",
+      "url": "https://fal.ai",
+      "terms_url": "https://fal.ai/terms",
+      "description": "API aggregator with 985+ endpoints across image, video, audio, and 3D models"
+    },
+    {
+      "name": "Replicate",
+      "category": "aggregator",
+      "url": "https://replicate.com",
+      "terms_url": "https://replicate.com/terms",
+      "description": "API platform to run open-source AI models for image, video, and more"
+    },
+    {
+      "name": "getimg.ai",
+      "category": "aggregator",
+      "url": "https://getimg.ai",
+      "terms_url": "https://getimg.ai/terms",
+      "description": "Multi-model aggregator dashboard for video and image generation"
+    },
+    {
+      "name": "Dreamina (CapCut)",
+      "category": "image_and_video",
+      "url": "https://dreamina.capcut.com",
+      "terms_url": "https://dreamina.capcut.com/clause/dreamina-terms-of-service",
+      "description": "CapCut's standalone AI image and video generation platform with avatar tools"
+    },
+    {
+      "name": "Animatix",
+      "category": "video",
+      "url": "https://www.animatix.ai",
+      "terms_url": null,
+      "terms_note": "Enterprise-only platform — no public T&C page found. Terms likely handled via individual enterprise contracts. Contact: https://www.animatix.ai/contact-us",
+      "description": "Enterprise AI video production pipeline for studios and agencies, orchestrating multiple AI models from script to screen"
+    }
+  ]
+}
